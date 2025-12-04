@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema GTD Académico</title>
+    <style>
+        /* ========== VARIABLES DE TEMA ========== */
+        :root {
+            --bg-primary: #f5f7fa;
+            --bg-secondary: #ffffff;
+            --bg-card: #ffffff;
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
+            --border-color: #e1e8ed;
+            --accent-primary: #3498db;
+            --accent-hover: #2980b9;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --shadow: rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-card: #0f3460;
+            --text-primary: #eaeaea;
+            --text-secondary: #a8a8a8;
+            --border-color: #2d4263;
+            --accent-primary: #4a90e2;
+            --accent-hover: #357abd;
+            --success: #2ecc71;
+            --warning: #f1c40f;
+            --danger: #e74c3c;
+            --shadow: rgba(0, 0, 0, 0.3);
+        }
+
+        /* ========== ESTILOS GENERALES ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* ========== HEADER ========== */
+        header {
+            background-color: var(--bg-secondary);
+            padding: 20px 0;
+            box-shadow: 0 2px 10px var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            color: var(--accent-primary);
+            font-size: 2rem;
+        }
+
+        /* ========== TOGGLE TEMA ========== */
+        .theme-toggle {
+            background-color: var(--accent-primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        .theme-toggle:hover {
+            background-color: var(--accent-hover);
+        }
+
+        /* ========== NAVEGACIÓN DE PESTAÑAS ========== */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .tab-btn:hover {
+            border-color: var(--accent-primary);
+        }
+
+        .tab-btn.active {
+            background-color: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+        }
+
+        /* ========== SECCIONES ========== */
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        /* ========== TARJETAS ========== */
+        .card {
+            background-color: var(--bg-card);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 15px var(--shadow);
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            color: var(--accent-primary);
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        /* ========== FORMULARIO ========== */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        button {
+            background-color: var(--accent-primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: var(--accent-hover);
+        }
+
+        /* ========== INBOX (RECOPILAR) ========== */
+        .inbox-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .inbox-input input {
+            flex: 1;
+        }
+
+        .inbox-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .inbox-item {
+            background-color: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* ========== PROCESAR ========== */
+        .process-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+
+        .process-item {
+            background-color: var(--bg-secondary);
+            border: 3px solid var(--accent-primary);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .process-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--accent-primary);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        /* ========== MODAL ========== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background-color: var(--bg-card);
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 700px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px var(--shadow);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-close {
+            background-color: var(--danger);
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+
+        /* ========== LISTA DINÁMICA ========== */
+        .dynamic-list {
+            margin-top: 16px;
+        }
+
+        .list-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .list-item input {
+            flex: 2;
+        }
+
+        .list-item input[type="number"] {
+            flex: 1;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+        }
+
+        .btn-success {
+            background-color: var(--success);
+        }
+
+        /* ========== CALENDARIO ========== */
+        .calendar-views {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .view-btn {
+            padding: 8px 16px;
+            background-color: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .view-btn.active {
+            background-color: var(--accent-primary);
+            border-color: var(--accent-primary);
+            color: white;
+        }
+
+        /* Vista Diaria */
+        .day-view {
+            display: none;
+        }
+
+        .day-view.active {
+            display: block;
+        }
+
+        .time-slots {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .time-slot {
+            display: grid;
+            grid-template-columns: 80px 1fr;
+            min-height: 60px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .time-label {
+            padding: 8px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-align: right;
+            padding-right: 16px;
+        }
+
+        .time-content {
+            padding: 8px;
+            position: relative;
+        }
+
+        .event-block {
+            background-color: var(--accent-primary);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            cursor: move;
+            font-size: 0.9rem;
+        }
+
+        .event-block.dragging {
+            opacity: 0.5;
+        }
+
+        .event-block.exam {
+            background-color: var(--danger);
+        }
+
+        .event-block.project {
+            background-color: var(--warning);
+        }
+
+        /* Vista Semanal */
+        .week-view {
+            display: none;
+            overflow-x: auto;
+        }
+
+        .week-view.active {
+            display: block;
+        }
+
+        .week-grid {
+            display: grid;
+            grid-template-columns: 80px repeat(7, 1fr);
+            gap: 1px;
+            background-color: var(--border-color);
+            min-width: 800px;
+        }
+
+        .week-header {
+            background-color: var(--bg-secondary);
+            padding: 12px;
+            text-align: center;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .week-time {
+            background-color: var(--bg-secondary);
+            padding: 8px;
+            text-align: right;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .week-cell {
+            background-color: var(--bg-card);
+            min-height: 60px;
+            padding: 4px;
+        }
+
+        /* Vista Mensual */
+        .month-view {
+            display: none;
+        }
+
+        .month-view.active {
+            display: block;
+        }
+
+        .month-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .month-day {
+            background-color: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            min-height: 120px;
+        }
+
+        .month-day-header {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--accent-primary);
+        }
+
+        .month-event {
+            background-color: var(--accent-primary);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+            cursor: pointer;
+        }
+
+        /* ========== CONFIGURACIÓN HORARIOS ========== */
+        .schedule-config {
+            margin-top: 20px;
+        }
+
+        .schedule-item {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        /* ========== LISTA DE TAREAS ========== */
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .task-item {
+            background-color: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .task-item.completed {
+            opacity: 0.6;
+            text-decoration: line-through;
+        }
+
+        /* ========== MÉTRICAS ========== */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-hover));
+            color: white;
+            padding: 24px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 768px) {
+            .process-container {
+                grid-template-columns: 1fr;
+            }
+
+            .schedule-item {
+                grid-template-columns: 1fr;
+            }
+
+            .time-slot {
+                grid-template-columns: 60px 1fr;
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        .badge-tarea { background-color: var(--accent-primary); color: white; }
+        .badge-examen { background-color: var(--danger); color: white; }
+        .badge-proyecto { background-color: var(--warning); color: white; }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header>
+        <div class="header-content">
+            <h1>📚 Sistema GTD Académico</h1>
+            <button class="theme-toggle" onclick="toggleTheme()">🌓 Cambiar Tema</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- NAVEGACIÓN -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showSection('recopilar')">1. Recopilar</button>
+            <button class="tab-btn" onclick="showSection('procesar')">2. Procesar</button>
+            <button class="tab-btn" onclick="showSection('organizar')">3. Organizar</button>
+            <button class="tab-btn" onclick="showSection('evaluar')">4. Evaluar</button>
+            <button class="tab-btn" onclick="showSection('hacer')">5. Hacer (Hoy)</button>
+            <button class="tab-btn" onclick="showSection('configuracion')">⚙️ Configuración</button>
+        </div>
+
+        <!-- SECCIÓN 1: RECOPILAR -->
+        <div id="recopilar" class="section active">
+            <div class="card">
+                <h2>📥 Inbox - Captura Rápida</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                    Captura rápidamente cualquier idea, tarea o recordatorio. No pienses, solo escribe.
+                </p>
+                <div class="inbox-input">
+                    <input type="text" id="inboxInput" placeholder="¿Qué necesitas recordar?" 
+                           onkeypress="if(event.key==='Enter') addToInbox()">
+                    <button onclick="addToInbox()">➕ Capturar</button>
+                </div>
+                <div id="inboxList" class="inbox-list"></div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 2: PROCESAR -->
+        <div id="procesar" class="section">
+            <div class="card">
+                <h2>🔍 Procesar Elementos</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                    Decide qué hacer con cada elemento capturado.
+                </p>
+                <div id="processArea"></div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 3: ORGANIZAR -->
+        <div id="organizar" class="section">
+            <div class="card">
+                <h2>📅 Calendario</h2>
+                
+                <div class="calendar-views">
+                    <button class="view-btn active" onclick="switchCalendarView('day')">Vista Diaria</button>
+                    <button class="view-btn" onclick="switchCalendarView('week')">Vista Semanal</button>
+                    <button class="view-btn" onclick="switchCalendarView('month')">Vista Mensual</button>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <button onclick="changeDate(-1)">⬅️ Anterior</button>
+                    <button onclick="changeDate(0)">📍 Hoy</button>
+                    <button onclick="changeDate(1)">Siguiente ➡️</button>
+                    <span id="currentDateDisplay" style="margin-left: 20px; font-weight: 600;"></span>
+                </div>
+
+                <!-- Vista Diaria -->
+                <div id="dayView" class="day-view active">
+                    <div id="dayTimeSlots" class="time-slots"></div>
+                </div>
+
+                <!-- Vista Semanal -->
+                <div id="weekView" class="week-view">
+                    <div id="weekGrid" class="week-grid"></div>
+                </div>
+
+                <!-- Vista Mensual -->
+                <div id="monthView" class="month-view">
+                    <div id="monthGrid" class="month-grid"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 4: EVALUAR -->
+        <div id="evaluar" class="section">
+            <div class="card">
+                <h2>📊 Métricas</h2>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="metricCompleted">0</div>
+                        <div>Tareas Completadas</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="metricPending">0</div>
+                        <div>Pendientes</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="metricExams">0</div>
+                        <div>Exámenes Preparados</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="metricProjects">0</div>
+                        <div>Proyectos Completados</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 5: HACER -->
+        <div id="hacer" class="section">
+            <div class="card">
+                <h2>✅ Tareas de Hoy</h2>
+                <div id="todayTasks" class="task-list"></div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN CONFIGURACIÓN -->
+        <div id="configuracion" class="section">
+            <div class="card">
+                <h2>⚙️ Configuración de Horarios Disponibles</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                    Define tus franjas horarias disponibles para estudio/trabajo.
+                </p>
+                
+                <div class="schedule-config">
+                    <div id="scheduleList"></div>
+                    <button onclick="addScheduleSlot()" style="margin-top: 16px;">➕ Añadir Franja Horaria</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PARA PROCESAR TAREAS -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Procesar Tarea</h2>
+                <button class="modal-close" onclick="closeModal('taskModal')">✕ Cerrar</button>
+            </div>
+            <div class="form-group">
+                <label>¿Es para hoy?</label>
+                <div class="action-buttons">
+                    <button class="btn-action" onclick="taskForToday()">Sí, hacerla hoy</button>
+                    <button class="btn-action" onclick="showScheduleTask()">No, agendarla</button>
+                </div>
+            </div>
+            <div id="scheduleTaskForm" style="display: none; margin-top: 20px;">
+                <div class="form-group">
+                    <label>Fecha</label>
+                    <input type="date" id="taskDate">
+                </div>
+                <div class="form-group">
+                    <label>Hora de inicio</label>
+                    <input type="time" id="taskTimeStart">
+                </div>
+                <div class="form-group">
+                    <label>Hora de fin</label>
+                    <input type="time" id="taskTimeEnd">
+                </div>
+                <button onclick="scheduleTask()">📅 Agendar Tarea</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PARA PROCESAR EXÁMENES -->
+    <div id="examModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Procesar Examen</h2>
+                <button class="modal-close" onclick="closeModal('examModal')">✕ Cerrar</button>
+            </div>
+            
+            <div class="form-group">
+                <label>Fecha del examen</label>
+                <input type="date" id="examDate">
+            </div>
+
+            <div class="form-group">
+                <label>¿Es prioritario?</label>
+                <select id="examPriority">
+                    <option value="alta">Alta prioridad</option>
+                    <option value="media">Media prioridad</option>
+                    <option value="baja">Baja prioridad</option>
+                </select>
+            </div>
+
+            <h3 style="margin-top: 24px; margin-bottom: 12px;">Índice del temario</h3>
+            <div id="examTopicsList" class="dynamic-list"></div>
+            <button class="btn-small" onclick="addExamTopic()">➕ Añadir punto del temario</button>
+
+            <button onclick="scheduleExam()" style="margin-top: 24px; width: 100%;">
+                📚 Distribuir estudio en calendario
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL PARA PROCESAR PROYECTOS -->
+    <div id="projectModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Procesar Proyecto/Trabajo</h2>
+                <button class="modal-close" onclick="closeModal('projectModal')">✕ Cerrar</button>
+            </div>
+            
+            <div class="form-group">
+                <label>Fecha de entrega</label>
+                <input type="date" id="projectDate">
+            </div>
+
+            <div class="form-group">
+                <label>¿Es prioritario?</label>
+                <select id="projectPriority">
+                    <option value="alta">Alta prioridad</option>
+                    <option value="media">Media prioridad</option>
+                    <option value="baja">Baja prioridad</option>
+                </select>
+            </div>
+
+            <h3 style="margin-top: 24px; margin-bottom: 12px;">Pasos del proyecto</h3>
+            <div id="projectStepsList" class="dynamic-list"></div>
+            <button class="btn-small" onclick="addProjectStep()">➕ Añadir paso</button>
+
+            <button onclick="scheduleProject()" style="margin-top: 24px; width: 100%;">
+                📋 Distribuir proyecto en calendario
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ========== DATOS GLOBALES ==========
+        let inbox = [];
+        let scheduledEvents = [];
+        let scheduleSlots = [];
+        let currentProcessingItem = null;
+        let currentDate = new Date();
+        let currentView = 'day';
+        let draggedEvent = null;
+
+        // ========== TEMA ==========
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            html.setAttribute('data-theme', currentTheme === 'dark' ? 'light' : 'dark');
+        }
+
+        // ========== NAVEGACIÓN ==========
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (sectionId === 'procesar') renderProcessArea();
+            if (sectionId === 'organizar') renderCalendar();
+            if (sectionId === 'evaluar') renderMetrics();
+            if (sectionId === 'hacer') renderTodayTasks();
+            if (sectionId === 'configuracion') renderScheduleConfig();
+        }
+
+        // ========== RECOPILAR (FASE 1) ==========
+        function addToInbox() {
+            const input = document.getElementById('inboxInput');
+            const text = input.value.trim();
+            
+            if (!text) return;
+            
+            inbox.push({
+                id: Date.now(),
+                text: text,
+                processed: false
+            });
+            
+            input.value = '';
+            renderInbox();
+        }
+
+        function renderInbox() {
+            const container = document.getElementById('inboxList');
+            const unprocessed = inbox.filter(item => !item.processed);
+            
+            if (unprocessed.length === 0) {
+                container.innerHTML = '<div class="empty-state">Tu inbox está vacío. ¡Bien hecho!</div>';
+                return;
+            }
+            
+            container.innerHTML = unprocessed.map(item => `
+                <div class="inbox-item">
+                    <span>${item.text}</span>
+                    <button class="btn-small btn-danger" onclick="deleteInboxItem(${item.id})">
+                        🗑️ Eliminar
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function deleteInboxItem(id) {
+            inbox = inbox.filter(item => item.id !== id);
+            renderInbox();
+        }
+
+        // ========== PROCESAR (FASE 2) ==========
+        function renderProcessArea() {
+            const container = document.getElementById('processArea');
+            const unprocessed = inbox.filter(item => !item.processed);
+            
+            if (unprocessed.length === 0) {
+                container.innerHTML = '<div class="empty-state">No hay elementos por procesar</div>';
+                return;
+            }
+            
+            const item = unprocessed[0];
+            currentProcessingItem = item;
+            
+            container.innerHTML = `
+                <div class="process-item">
+                    <div class="process-title">${item.text}</div>
+                    <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                        ¿Qué tipo de elemento es?
+                    </p>
+                    <div class="action-buttons">
+                        <button class="btn-action" onclick="processAsTarea()">📝 Tarea Simple</button>
+                        <button class="btn-action" onclick="processAsExamen()">📚 Examen</button>
+                        <button class="btn-action" onclick="processAsProyecto()">📋 Proyecto/Trabajo</button>
+                        <button class="btn-action btn-danger" onclick="discardItem()">🗑️ Descartar</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function processAsTarea() {
+            openModal('taskModal');
+        }
+
+        function processAsExamen() {
+            openModal('examModal');
+            document.getElementById('examTopicsList').innerHTML = '';
+            addExamTopic();
+        }
+
+        function processAsProyecto() {
+            openModal('projectModal');
+            document.getElementById('projectStepsList').innerHTML = '';
+            addProjectStep();
+        }
+
+        function discardItem() {
+            if (currentProcessingItem) {
+                currentProcessingItem.processed = true;
+                renderProcessArea();
+            }
+        }
+
+        // ========== MODALES ==========
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // ========== PROCESAR TAREA ==========
+        function taskForToday() {
+            if (!currentProcessingItem) return;
+            
+            const today = new Date().toISOString().split('T')[0];
+            scheduledEvents.push({
+                id: Date.now(),
+                title: currentProcessingItem.text,
+                type: 'tarea',
+                date: today,
+                timeStart: '09:00',
+                timeEnd: '10:00',
+                completed: false
+            });
+            
+            currentProcessingItem.processed = true;
+            closeModal('taskModal');
+            renderProcessArea();
+            alert('✅ Tarea añadida a HOY');
+        }
+
+        function showScheduleTask() {
+            document.getElementById('scheduleTaskForm').style.display = 'block';
+        }
+
+        function scheduleTask() {
+            if (!currentProcessingItem) return;
+            
+            const date = document.getElementById('taskDate').value;
+            const timeStart = document.getElementById('taskTimeStart').value;
+            const timeEnd = document.getElementById('taskTimeEnd').value;
+            
+            if (!date || !timeStart || !timeEnd) {
+                alert('⚠️ Completa todos los campos');
+                return;
+            }
+            
+            scheduledEvents.push({
+                id: Date.now(),
+                title: currentProcessingItem.text,
+                type: 'tarea',
+                date: date,
+                timeStart: timeStart,
+                timeEnd: timeEnd,
+                completed: false
+            });
+            
+            currentProcessingItem.processed = true;
+            closeModal('taskModal');
+            document.getElementById('scheduleTaskForm').style.display = 'none';
+            renderProcessArea();
+            alert('✅ Tarea agendada');
+        }
+
+        // ========== PROCESAR EXAMEN ==========
+        function addExamTopic() {
+            const container = document.getElementById('examTopicsList');
+            const id = Date.now();
+            
+            const div = document.createElement('div');
+            div.className = 'list-item';
+            div.innerHTML = `
+                <input type="text" placeholder="Nombre del punto" data-id="${id}" class="topic-name">
+                <input type="number" placeholder="Horas" min="0.5" step="0.5" data-id="${id}" class="topic-hours">
+                <button class="btn-small btn-danger" onclick="this.parentElement.remove()">✕</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function scheduleExam() {
+            if (!currentProcessingItem) return;
+            
+            const examDate = document.getElementById('examDate').value;
+            const priority = document.getElementById('examPriority').value;
+            
+            if (!examDate) {
+                alert('⚠️ Indica la fecha del examen');
+                return;
+            }
+            
+            const topics = [];
+            const topicNames = document.querySelectorAll('.topic-name');
+            const topicHours = document.querySelectorAll('.topic-hours');
+            
+            for (let i = 0; i < topicNames.length; i++) {
+                const name = topicNames[i].value.trim();
+                const hours = parseFloat(topicHours[i].value);
+                
+                if (name && hours > 0) {
+                    topics.push({ name, hours });
+                }
+            }
+            
+            if (topics.length === 0) {
+                alert('⚠️ Añade al menos un punto del temario');
+                return;
+            }
+            
+            // Distribuir automáticamente en el calendario
+            distributeExamStudy(currentProcessingItem.text, examDate, topics, priority);
+            
+            currentProcessingItem.processed = true;
+            closeModal('examModal');
+            renderProcessArea();
+            alert('✅ Examen distribuido en el calendario');
+        }
+
+        function distributeExamStudy(examTitle, examDate, topics, priority) {
+            const totalHours = topics.reduce((sum, t) => sum + t.hours, 0);
+            
+            // Obtener slots disponibles hasta la fecha del examen
+            const availableSlots = getAvailableSlots(new Date(), new Date(examDate));
+            
+            if (availableSlots.length === 0) {
+                alert('⚠️ No hay franjas horarias configuradas. Ve a Configuración.');
+                return;
+            }
+            
+            // Calcular bloques de estudio (sesiones de 1-2 horas)
+            let remainingHours = totalHours;
+            let slotIndex = 0;
+            let topicIndex = 0;
+            let hoursForCurrentTopic = topics[0].hours;
+            
+            while (remainingHours > 0 && slotIndex < availableSlots.length) {
+                const slot = availableSlots[slotIndex];
+                const slotDuration = getSlotDuration(slot.start, slot.end);
+                
+                // Crear sesiones de máximo 2 horas
+                const sessionDuration = Math.min(2, slotDuration, hoursForCurrentTopic, remainingHours);
+                
+                const endTime = addHoursToTime(slot.start, sessionDuration);
+                
+                scheduledEvents.push({
+                    id: Date.now() + slotIndex,
+                    title: `📚 ${examTitle} - ${topics[topicIndex].name}`,
+                    type: 'examen',
+                    date: slot.date,
+                    timeStart: slot.start,
+                    timeEnd: endTime,
+                    completed: false,
+                    priority: priority,
+                    examDate: examDate
+                });
+                
+                remainingHours -= sessionDuration;
+                hoursForCurrentTopic -= sessionDuration;
+                
+                // Cambiar al siguiente tema si se completó el actual
+                if (hoursForCurrentTopic <= 0 && topicIndex < topics.length - 1) {
+                    topicIndex++;
+                    hoursForCurrentTopic = topics[topicIndex].hours;
+                }
+                
+                slotIndex++;
+            }
+            
+            if (remainingHours > 0) {
+                alert(`⚠️ No hay suficiente tiempo disponible. Faltan ${remainingHours.toFixed(1)} horas por distribuir.`);
+            }
+        }
+
+        // ========== PROCESAR PROYECTO ==========
+        function addProjectStep() {
+            const container = document.getElementById('projectStepsList');
+            const id = Date.now();
+            
+            const div = document.createElement('div');
+            div.className = 'list-item';
+            div.innerHTML = `
+                <input type="text" placeholder="Descripción del paso" data-id="${id}" class="step-name">
+                <input type="number" placeholder="Horas" min="0.5" step="0.5" data-id="${id}" class="step-hours">
+                <button class="btn-small btn-danger" onclick="this.parentElement.remove()">✕</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function scheduleProject() {
+            if (!currentProcessingItem) return;
+            
+            const projectDate = document.getElementById('projectDate').value;
+            const priority = document.getElementById('projectPriority').value;
+            
+            if (!projectDate) {
+                alert('⚠️ Indica la fecha de entrega');
+                return;
+            }
+            
+            const steps = [];
+            const stepNames = document.querySelectorAll('.step-name');
+            const stepHours = document.querySelectorAll('.step-hours');
+            
+            for (let i = 0; i < stepNames.length; i++) {
+                const name = stepNames[i].value.trim();
+                const hours = parseFloat(stepHours[i].value);
+                
+                if (name && hours > 0) {
+                    steps.push({ name, hours });
+                }
+            }
+            
+            if (steps.length === 0) {
+                alert('⚠️ Añade al menos un paso');
+                return;
+            }
+            
+            // Distribuir automáticamente en el calendario
+            distributeProjectWork(currentProcessingItem.text, projectDate, steps, priority);
+            
+            currentProcessingItem.processed = true;
+            closeModal('projectModal');
+            renderProcessArea();
+            alert('✅ Proyecto distribuido en el calendario');
+        }
+
+        function distributeProjectWork(projectTitle, deliveryDate, steps, priority) {
+            const totalHours = steps.reduce((sum, s) => sum + s.hours, 0);
+            
+            // Obtener slots disponibles hasta la fecha de entrega
+            const availableSlots = getAvailableSlots(new Date(), new Date(deliveryDate));
+            
+            if (availableSlots.length === 0) {
+                alert('⚠️ No hay franjas horarias configuradas. Ve a Configuración.');
+                return;
+            }
+            
+            let remainingHours = totalHours;
+            let slotIndex = 0;
+            let stepIndex = 0;
+            let hoursForCurrentStep = steps[0].hours;
+            
+            while (remainingHours > 0 && slotIndex < availableSlots.length) {
+                const slot = availableSlots[slotIndex];
+                const slotDuration = getSlotDuration(slot.start, slot.end);
+                
+                const sessionDuration = Math.min(2, slotDuration, hoursForCurrentStep, remainingHours);
+                const endTime = addHoursToTime(slot.start, sessionDuration);
+                
+                scheduledEvents.push({
+                    id: Date.now() + slotIndex,
+                    title: `📋 ${projectTitle} - ${steps[stepIndex].name}`,
+                    type: 'proyecto',
+                    date: slot.date,
+                    timeStart: slot.start,
+                    timeEnd: endTime,
+                    completed: false,
+                    priority: priority,
+                    deliveryDate: deliveryDate
+                });
+                
+                remainingHours -= sessionDuration;
+                hoursForCurrentStep -= sessionDuration;
+                
+                if (hoursForCurrentStep <= 0 && stepIndex < steps.length - 1) {
+                    stepIndex++;
+                    hoursForCurrentStep = steps[stepIndex].hours;
+                }
+                
+                slotIndex++;
+            }
+            
+            if (remainingHours > 0) {
+                alert(`⚠️ No hay suficiente tiempo disponible. Faltan ${remainingHours.toFixed(1)} horas por distribuir.`);
+            }
+        }
+
+        // ========== FUNCIONES AUXILIARES PARA DISTRIBUCIÓN ==========
+        function getAvailableSlots(startDate, endDate) {
+            const slots = [];
+            const current = new Date(startDate);
+            current.setHours(0, 0, 0, 0);
+            
+            // Ordenar eventos por prioridad y fecha
+            const sortedEvents = [...scheduledEvents].sort((a, b) => {
+                const priorityOrder = { alta: 1, media: 2, baja: 3 };
+                const aPriority = priorityOrder[a.priority] || 999;
+                const bPriority = priorityOrder[b.priority] || 999;
+                
+                if (aPriority !== bPriority) return aPriority - bPriority;
+                
+                const aTargetDate = new Date(a.examDate || a.deliveryDate || a.date);
+                const bTargetDate = new Date(b.examDate || b.deliveryDate || b.date);
+                return aTargetDate - bTargetDate;
+            });
+            
+            while (current <= endDate) {
+                const dateStr = current.toISOString().split('T')[0];
+                const daySchedule = scheduleSlots.filter(s => s.days.includes(current.getDay()));
+                
+                daySchedule.forEach(schedule => {
+                    // Comprobar si hay eventos que ocupan este slot
+                    const isOccupied = sortedEvents.some(event => {
+                        return event.date === dateStr && 
+                               timesOverlap(schedule.start, schedule.end, event.timeStart, event.timeEnd);
+                    });
+                    
+                    if (!isOccupied) {
+                        slots.push({
+                            date: dateStr,
+                            start: schedule.start,
+                            end: schedule.end
+                        });
+                    }
+                });
+                
+                current.setDate(current.getDate() + 1);
+            }
+            
+            return slots;
+        }
+
+        function timesOverlap(start1, end1, start2, end2) {
+            return (start1 < end2) && (end1 > start2);
+        }
+
+        function getSlotDuration(start, end) {
+            const [startH, startM] = start.split(':').map(Number);
+            const [endH, endM] = end.split(':').map(Number);
+            return (endH + endM/60) - (startH + startM/60);
+        }
+
+        function addHoursToTime(time, hours) {
+            const [h, m] = time.split(':').map(Number);
+            const totalMinutes = h * 60 + m + hours * 60;
+            const newH = Math.floor(totalMinutes / 60);
+            const newM = totalMinutes % 60;
+            return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+        }
+
+        // ========== CONFIGURACIÓN DE HORARIOS ==========
+        function renderScheduleConfig() {
+            const container = document.getElementById('scheduleList');
+            
+            if (scheduleSlots.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-secondary);">No hay franjas horarias configuradas.</p>';
+                return;
+            }
+            
+            container.innerHTML = scheduleSlots.map((slot, index) => `
+                <div class="schedule-item">
+                    <select onchange="updateScheduleSlot(${index}, 'days', this.value)" multiple style="height: 80px;">
+                        <option value="1" ${slot.days.includes(1) ? 'selected' : ''}>Lunes</option>
+                        <option value="2" ${slot.days.includes(2) ? 'selected' : ''}>Martes</option>
+                        <option value="3" ${slot.days.includes(3) ? 'selected' : ''}>Miércoles</option>
+                        <option value="4" ${slot.days.includes(4) ? 'selected' : ''}>Jueves</option>
+                        <option value="5" ${slot.days.includes(5) ? 'selected' : ''}>Viernes</option>
+                        <option value="6" ${slot.days.includes(6) ? 'selected' : ''}>Sábado</option>
+                        <option value="0" ${slot.days.includes(0) ? 'selected' : ''}>Domingo</option>
+                    </select>
+                    <input type="time" value="${slot.start}" onchange="updateScheduleSlot(${index}, 'start', this.value)">
+                    <input type="time" value="${slot.end}" onchange="updateScheduleSlot(${index}, 'end', this.value)">
+                    <button class="btn-small btn-danger" onclick="deleteScheduleSlot(${index})">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function addScheduleSlot() {
+            scheduleSlots.push({
+                days: [1, 2, 3, 4, 5], // Lunes a Viernes por defecto
+                start: '16:00',
+                end: '20:00'
+            });
+            renderScheduleConfig();
+        }
+
+        function updateScheduleSlot(index, field, value) {
+            if (field === 'days') {
+                const select = event.target;
+                scheduleSlots[index].days = Array.from(select.selectedOptions).map(o => parseInt(o.value));
+            } else {
+                scheduleSlots[index][field] = value;
+            }
+        }
+
+        function deleteScheduleSlot(index) {
+            scheduleSlots.splice(index, 1);
+            renderScheduleConfig();
+        }
+
+        // ========== CALENDARIO (FASE 3) ==========
+        function switchCalendarView(view) {
+            currentView = view;
+            
+            document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.querySelectorAll('.day-view, .week-view, .month-view').forEach(v => v.classList.remove('active'));
+            document.getElementById(view + 'View').classList.add('active');
+            
+            renderCalendar();
+        }
+
+        function changeDate(delta) {
+            if (delta === 0) {
+                currentDate = new Date();
+            } else if (currentView === 'day') {
+                currentDate.setDate(currentDate.getDate() + delta);
+            } else if (currentView === 'week') {
+                currentDate.setDate(currentDate.getDate() + delta * 7);
+            } else if (currentView === 'month') {
+                currentDate.setMonth(currentDate.getMonth() + delta);
+            }
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            updateDateDisplay();
+            
+            if (currentView === 'day') {
+                renderDayView();
+            } else if (currentView === 'week') {
+                renderWeekView();
+            } else if (currentView === 'month') {
+                renderMonthView();
+            }
+        }
+
+        function updateDateDisplay() {
+            const display = document.getElementById('currentDateDisplay');
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            
+            if (currentView === 'day') {
+                display.textContent = currentDate.toLocaleDateString('es-ES', options);
+            } else if (currentView === 'week') {
+                const weekStart = getWeekStart(currentDate);
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekEnd.getDate() + 6);
+                display.textContent = `Semana del ${weekStart.getDate()} al ${weekEnd.getDate()} de ${weekStart.toLocaleDateString('es-ES', {month: 'long', year: 'numeric'})}`;
+            } else if (currentView === 'month') {
+                display.textContent = currentDate.toLocaleDateString('es-ES', {month: 'long', year: 'numeric'});
+            }
+        }
+
+        function renderDayView() {
+            const container = document.getElementById('dayTimeSlots');
+            const dateStr = currentDate.toISOString().split('T')[0];
+            const dayEvents = scheduledEvents.filter(e => e.date === dateStr);
+            
+            let html = '';
+            for (let hour = 6; hour < 24; hour++) {
+                const timeStr = `${String(hour).padStart(2, '0')}:00`;
+                const eventsInSlot = dayEvents.filter(e => {
+                    const eventHour = parseInt(e.timeStart.split(':')[0]);
+                    return eventHour === hour;
+                });
+                
+                html += `
+                    <div class="time-slot" data-time="${timeStr}">
+                        <div class="time-label">${timeStr}</div>
+                        <div class="time-content" ondrop="drop(event)" ondragover="allowDrop(event)" data-date="${dateStr}" data-time="${timeStr}">
+                            ${eventsInSlot.map(e => `
+                                <div class="event-block ${e.type}" draggable="true" ondragstart="drag(event)" data-id="${e.id}">
+                                    <strong>${e.title}</strong><br>
+                                    <small>${e.timeStart} - ${e.timeEnd}</small>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        function renderWeekView() {
+            const container = document.getElementById('weekGrid');
+            const weekStart = getWeekStart(currentDate);
+            const days = ['', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+            
+            let html = '<div class="week-header"></div>';
+            
+            for (let i = 0; i < 7; i++) {
+                const day = new Date(weekStart);
+                day.setDate(day.getDate() + i);
+                html += `<div class="week-header">${days[i + 1]} ${day.getDate()}</div>`;
+            }
+            
+            for (let hour = 6; hour < 24; hour++) {
+                const timeStr = `${String(hour).padStart(2, '0')}:00`;
+                html += `<div class="week-time">${timeStr}</div>`;
+                
+                for (let i = 0; i < 7; i++) {
+                    const day = new Date(weekStart);
+                    day.setDate(day.getDate() + i);
+                    const dateStr = day.toISOString().split('T')[0];
+                    
+                    const eventsInSlot = scheduledEvents.filter(e => {
+                        const eventHour = parseInt(e.timeStart.split(':')[0]);
+                        return e.date === dateStr && eventHour === hour;
+                    });
+                    
+                    html += `
+                        <div class="week-cell" ondrop="drop(event)" ondragover="allowDrop(event)" data-date="${dateStr}" data-time="${timeStr}">
+                            ${eventsInSlot.map(e => `
+                                <div class="event-block ${e.type}" draggable="true" ondragstart="drag(event)" data-id="${e.id}" style="font-size: 0.75rem;">
+                                    ${e.title.substring(0, 20)}...
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+            }
+            
+            container.innerHTML = html;
+        }
+
+        function renderMonthView() {
+            const container = document.getElementById('monthGrid');
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startDay = firstDay.getDay();
+            
+            let html = '';
+            
+            // Días anteriores del mes
+            for (let i = 0; i < startDay; i++) {
+                html += '<div class="month-day" style="opacity: 0.3;"></div>';
+            }
+            
+            // Días del mes
+            for (let day = 1; day <= lastDay.getDate(); day++) {
+                const date = new Date(year, month, day);
+                const dateStr = date.toISOString().split('T')[0];
+                const dayEvents = scheduledEvents.filter(e => e.date === dateStr);
+                
+                html += `
+                    <div class="month-day">
+                        <div class="month-day-header">${day}</div>
+                        ${dayEvents.map(e => `
+                            <div class="month-event ${e.type}" onclick="alert('${e.title}\\n${e.timeStart} - ${e.timeEnd}')">
+                                ${e.title.substring(0, 15)}...
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        function getWeekStart(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(d.setDate(diff));
+        }
+
+        // ========== DRAG AND DROP ==========
+        function allowDrop(ev) {
+            ev.preventDefault();
+        }
+
+        function drag(ev) {
+            const eventId = parseInt(ev.target.getAttribute('data-id'));
+            ev.dataTransfer.setData('eventId', eventId);
+            ev.target.classList.add('dragging');
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            const eventId = parseInt(ev.dataTransfer.getData('eventId'));
+            const event = scheduledEvents.find(e => e.id === eventId);
+            
+            if (event) {
+                const newDate = ev.currentTarget.getAttribute('data-date');
+                const newTime = ev.currentTarget.getAttribute('data-time');
+                
+                if (newDate) event.date = newDate;
+                if (newTime) event.timeStart = newTime;
+                
+                renderCalendar();
+            }
+            
+            document.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
+        }
+
+        // ========== HACER (FASE 5) ==========
+        function renderTodayTasks() {
+            const container = document.getElementById('todayTasks');
+            const today = new Date().toISOString().split('T')[0];
+            const todayEvents = scheduledEvents.filter(e => e.date === today);
+            
+            if (todayEvents.length === 0) {
+                container.innerHTML = '<div class="empty-state">🎉 No tienes tareas programadas para hoy</div>';
+                return;
+            }
+            
+            const sorted = todayEvents.sort((a, b) => a.timeStart.localeCompare(b.timeStart));
+            
+            container.innerHTML = sorted.map(event => `
+                <div class="task-item ${event.completed ? 'completed' : ''}">
+                    <div>
+                        <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 8px;">
+                            ${event.title}
+                        </div>
+                        <div>
+                            <span class="badge badge-${event.type}">${event.type.toUpperCase()}</span>
+                            <span style="color: var(--text-secondary);">⏰ ${event.timeStart} - ${event.timeEnd}</span>
+                        </div>
+                    </div>
+                    <div>
+                        ${!event.completed ? 
+                            `<button class="btn-success" onclick="completeEvent(${event.id})">✅ Completar</button>` :
+                            '<span style="color: var(--success);">✅ Completada</span>'
+                        }
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function completeEvent(id) {
+            const event = scheduledEvents.find(e => e.id === id);
+            if (event) {
+                event.completed = true;
+                renderTodayTasks();
+            }
+        }
+
+        // ========== EVALUAR (FASE 4) ==========
+        function renderMetrics() {
+            const completed = scheduledEvents.filter(e => e.completed).length;
+            const pending = scheduledEvents.filter(e => !e.completed).length;
+            const exams = scheduledEvents.filter(e => e.type === 'examen' && e.completed).length;
+            const projects = scheduledEvents.filter(e => e.type === 'proyecto' && e.completed).length;
+            
+            document.getElementById('metricCompleted').textContent = completed;
+            document.getElementById('metricPending').textContent = pending;
+            document.getElementById('metricExams').textContent = exams;
+            document.getElementById('metricProjects').textContent = projects;
+        }
+
+        // ========== INICIALIZACIÓN ==========
+        renderInbox();
+        renderCalendar();
+    </script>
+</body>
+</html>
