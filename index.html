@@ -582,6 +582,16 @@
         .badge-tarea { background-color: var(--accent-primary); color: white; }
         .badge-examen { background-color: var(--danger); color: white; }
         .badge-proyecto { background-color: var(--warning); color: white; }
+
+        /* Ajuste: contenedor scrollable para calendario */
+        .calendar-scroll {
+            max-height: 480px; /* ajustable */
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        /* Ajuste: reducir espacio de horas para vista compacta */
+        .time-slot { min-height: 48px; }
     </style>
 </head>
 <body>
@@ -601,7 +611,6 @@
             <button class="tab-btn" onclick="showSection('organizar')">3. Organizar</button>
             <button class="tab-btn" onclick="showSection('evaluar')">4. Evaluar</button>
             <button class="tab-btn" onclick="showSection('hacer')">5. Hacer (Hoy)</button>
-            <button class="tab-btn" onclick="showSection('configuracion')">⚙️ Configuración</button>
         </div>
 
         <!-- SECCIÓN 1: RECOPILAR -->
@@ -649,19 +658,22 @@
                     <span id="currentDateDisplay" style="margin-left: 20px; font-weight: 600;"></span>
                 </div>
 
-                <!-- Vista Diaria -->
-                <div id="dayView" class="day-view active">
-                    <div id="dayTimeSlots" class="time-slots"></div>
-                </div>
+                <!-- Envoltorio scrollable: las vistas quedan dentro -->
+                <div class="calendar-scroll">
+                    <!-- Vista Diaria -->
+                    <div id="dayView" class="day-view active">
+                        <div id="dayTimeSlots" class="time-slots"></div>
+                    </div>
 
-                <!-- Vista Semanal -->
-                <div id="weekView" class="week-view">
-                    <div id="weekGrid" class="week-grid"></div>
-                </div>
+                    <!-- Vista Semanal -->
+                    <div id="weekView" class="week-view">
+                        <div id="weekGrid" class="week-grid"></div>
+                    </div>
 
-                <!-- Vista Mensual -->
-                <div id="monthView" class="month-view">
-                    <div id="monthGrid" class="month-grid"></div>
+                    <!-- Vista Mensual -->
+                    <div id="monthView" class="month-view">
+                        <div id="monthGrid" class="month-grid"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -696,21 +708,6 @@
             <div class="card">
                 <h2>✅ Tareas de Hoy</h2>
                 <div id="todayTasks" class="task-list"></div>
-            </div>
-        </div>
-
-        <!-- SECCIÓN CONFIGURACIÓN -->
-        <div id="configuracion" class="section">
-            <div class="card">
-                <h2>⚙️ Configuración de Horarios Disponibles</h2>
-                <p style="color: var(--text-secondary); margin-bottom: 16px;">
-                    Define tus franjas horarias disponibles para estudio/trabajo.
-                </p>
-                
-                <div class="schedule-config">
-                    <div id="scheduleList"></div>
-                    <button onclick="addScheduleSlot()" style="margin-top: 16px;">➕ Añadir Franja Horaria</button>
-                </div>
             </div>
         </div>
     </div>
@@ -815,7 +812,6 @@
         // ========== DATOS GLOBALES ==========
         let inbox = [];
         let scheduledEvents = [];
-        let scheduleSlots = [];
         let currentProcessingItem = null;
         let currentDate = new Date();
         let currentView = 'day';
@@ -840,7 +836,6 @@
             if (sectionId === 'organizar') renderCalendar();
             if (sectionId === 'evaluar') renderMetrics();
             if (sectionId === 'hacer') renderTodayTasks();
-            if (sectionId === 'configuracion') renderScheduleConfig();
         }
 
         // ========== RECOPILAR (FASE 1) ==========
@@ -1008,7 +1003,7 @@
             div.className = 'list-item';
             div.innerHTML = `
                 <input type="text" placeholder="Nombre del punto" data-id="${id}" class="topic-name">
-                <input type="number" placeholder="Horas" min="0.5" step="0.5" data-id="${id}" class="topic-hours">
+                <input type="number" placeholder="Minutos (ej. 30)" min="1" step="1" data-id="${id}" class="topic-minutes">
                 <button class="btn-small btn-danger" onclick="this.parentElement.remove()">✕</button>
             `;
             container.appendChild(div);
@@ -1027,14 +1022,14 @@
             
             const topics = [];
             const topicNames = document.querySelectorAll('.topic-name');
-            const topicHours = document.querySelectorAll('.topic-hours');
+            const topicMinutes = document.querySelectorAll('.topic-minutes');
             
             for (let i = 0; i < topicNames.length; i++) {
                 const name = topicNames[i].value.trim();
-                const hours = parseFloat(topicHours[i].value);
+                const minutes = parseInt(topicMinutes[i].value, 10);
                 
-                if (name && hours > 0) {
-                    topics.push({ name, hours });
+                if (name && minutes > 0) {
+                    topics.push({ name, minutes, index: i+1 });
                 }
             }
             
@@ -1043,68 +1038,45 @@
                 return;
             }
             
-            // Distribuir automáticamente en el calendario
-            distributeExamStudy(currentProcessingItem.text, examDate, topics, priority);
+            // Interacción para distribuir por días/grupos
+            const groupsCount = parseInt(prompt('¿En cuántos grupos/días quieres repartir el estudio? (ej. 2)'), 10);
+            if (!groupsCount || groupsCount < 1) {
+                alert('Operación cancelada');
+                return;
+            }
+            
+            // Para cada grupo, preguntar índices de temas asignados y la fecha; para cada tema pedir hora de inicio
+            for (let g = 0; g < groupsCount; g++) {
+                const indicesStr = prompt(`Grupo ${g+1}: ingresa los números de punto separados por comas (ej. 1,2)`);
+                if (!indicesStr) continue;
+                const date = prompt(`Grupo ${g+1}: Fecha (AAAA-MM-DD) donde se realizarán esos puntos`, examDate);
+                if (!date) continue;
+                const indices = indicesStr.split(',').map(s => parseInt(s.trim(),10)).filter(n => !isNaN(n));
+                
+                indices.forEach(idx => {
+                    const topic = topics.find(t => t.index === idx);
+                    if (!topic) return;
+                    const start = prompt(`Tema "${topic.name}" - Fecha ${date}: Hora de inicio (HH:MM)`);
+                    if (!start) return;
+                    const end = addMinutesToTime(start, topic.minutes);
+                    scheduledEvents.push({
+                        id: Date.now() + Math.floor(Math.random()*10000),
+                        title: `📚 ${currentProcessingItem.text} - ${topic.name}`,
+                        type: 'examen',
+                        date: date,
+                        timeStart: start,
+                        timeEnd: end,
+                        completed: false,
+                        priority: priority,
+                        examDate: examDate
+                    });
+                });
+            }
             
             currentProcessingItem.processed = true;
             closeModal('examModal');
             renderProcessArea();
-            alert('✅ Examen distribuido en el calendario');
-        }
-
-        function distributeExamStudy(examTitle, examDate, topics, priority) {
-            const totalHours = topics.reduce((sum, t) => sum + t.hours, 0);
-            
-            // Obtener slots disponibles hasta la fecha del examen
-            const availableSlots = getAvailableSlots(new Date(), new Date(examDate));
-            
-            if (availableSlots.length === 0) {
-                alert('⚠️ No hay franjas horarias configuradas. Ve a Configuración.');
-                return;
-            }
-            
-            // Calcular bloques de estudio (sesiones de 1-2 horas)
-            let remainingHours = totalHours;
-            let slotIndex = 0;
-            let topicIndex = 0;
-            let hoursForCurrentTopic = topics[0].hours;
-            
-            while (remainingHours > 0 && slotIndex < availableSlots.length) {
-                const slot = availableSlots[slotIndex];
-                const slotDuration = getSlotDuration(slot.start, slot.end);
-                
-                // Crear sesiones de máximo 2 horas
-                const sessionDuration = Math.min(2, slotDuration, hoursForCurrentTopic, remainingHours);
-                
-                const endTime = addHoursToTime(slot.start, sessionDuration);
-                
-                scheduledEvents.push({
-                    id: Date.now() + slotIndex,
-                    title: `📚 ${examTitle} - ${topics[topicIndex].name}`,
-                    type: 'examen',
-                    date: slot.date,
-                    timeStart: slot.start,
-                    timeEnd: endTime,
-                    completed: false,
-                    priority: priority,
-                    examDate: examDate
-                });
-                
-                remainingHours -= sessionDuration;
-                hoursForCurrentTopic -= sessionDuration;
-                
-                // Cambiar al siguiente tema si se completó el actual
-                if (hoursForCurrentTopic <= 0 && topicIndex < topics.length - 1) {
-                    topicIndex++;
-                    hoursForCurrentTopic = topics[topicIndex].hours;
-                }
-                
-                slotIndex++;
-            }
-            
-            if (remainingHours > 0) {
-                alert(`⚠️ No hay suficiente tiempo disponible. Faltan ${remainingHours.toFixed(1)} horas por distribuir.`);
-            }
+            alert('✅ Examen distribuido en el calendario (según asignaciones)');
         }
 
         // ========== PROCESAR PROYECTO ==========
@@ -1116,7 +1088,7 @@
             div.className = 'list-item';
             div.innerHTML = `
                 <input type="text" placeholder="Descripción del paso" data-id="${id}" class="step-name">
-                <input type="number" placeholder="Horas" min="0.5" step="0.5" data-id="${id}" class="step-hours">
+                <input type="number" placeholder="Minutos (ej. 60)" min="1" step="1" data-id="${id}" class="step-minutes">
                 <button class="btn-small btn-danger" onclick="this.parentElement.remove()">✕</button>
             `;
             container.appendChild(div);
@@ -1135,14 +1107,14 @@
             
             const steps = [];
             const stepNames = document.querySelectorAll('.step-name');
-            const stepHours = document.querySelectorAll('.step-hours');
+            const stepMinutes = document.querySelectorAll('.step-minutes');
             
             for (let i = 0; i < stepNames.length; i++) {
                 const name = stepNames[i].value.trim();
-                const hours = parseFloat(stepHours[i].value);
+                const minutes = parseInt(stepMinutes[i].value, 10);
                 
-                if (name && hours > 0) {
-                    steps.push({ name, hours });
+                if (name && minutes > 0) {
+                    steps.push({ name, minutes, index: i+1 });
                 }
             }
             
@@ -1151,177 +1123,52 @@
                 return;
             }
             
-            // Distribuir automáticamente en el calendario
-            distributeProjectWork(currentProcessingItem.text, projectDate, steps, priority);
+            const groupsCount = parseInt(prompt('¿En cuántos grupos/días quieres repartir los pasos? (ej. 2)'), 10);
+            if (!groupsCount || groupsCount < 1) {
+                alert('Operación cancelada');
+                return;
+            }
+            
+            for (let g = 0; g < groupsCount; g++) {
+                const indicesStr = prompt(`Grupo ${g+1}: ingresa los números de paso separados por comas (ej. 1,2)`);
+                if (!indicesStr) continue;
+                const date = prompt(`Grupo ${g+1}: Fecha (AAAA-MM-DD) donde se realizarán esos pasos`, projectDate);
+                if (!date) continue;
+                const indices = indicesStr.split(',').map(s => parseInt(s.trim(),10)).filter(n => !isNaN(n));
+                
+                indices.forEach(idx => {
+                    const step = steps.find(t => t.index === idx);
+                    if (!step) return;
+                    const start = prompt(`Paso "${step.name}" - Fecha ${date}: Hora de inicio (HH:MM)`);
+                    if (!start) return;
+                    const end = addMinutesToTime(start, step.minutes);
+                    scheduledEvents.push({
+                        id: Date.now() + Math.floor(Math.random()*10000),
+                        title: `📋 ${currentProcessingItem.text} - ${step.name}`,
+                        type: 'proyecto',
+                        date: date,
+                        timeStart: start,
+                        timeEnd: end,
+                        completed: false,
+                        priority: priority,
+                        deliveryDate: projectDate
+                    });
+                });
+            }
             
             currentProcessingItem.processed = true;
             closeModal('projectModal');
             renderProcessArea();
-            alert('✅ Proyecto distribuido en el calendario');
+            alert('✅ Proyecto distribuido en el calendario (según asignaciones)');
         }
 
-        function distributeProjectWork(projectTitle, deliveryDate, steps, priority) {
-            const totalHours = steps.reduce((sum, s) => sum + s.hours, 0);
-            
-            // Obtener slots disponibles hasta la fecha de entrega
-            const availableSlots = getAvailableSlots(new Date(), new Date(deliveryDate));
-            
-            if (availableSlots.length === 0) {
-                alert('⚠️ No hay franjas horarias configuradas. Ve a Configuración.');
-                return;
-            }
-            
-            let remainingHours = totalHours;
-            let slotIndex = 0;
-            let stepIndex = 0;
-            let hoursForCurrentStep = steps[0].hours;
-            
-            while (remainingHours > 0 && slotIndex < availableSlots.length) {
-                const slot = availableSlots[slotIndex];
-                const slotDuration = getSlotDuration(slot.start, slot.end);
-                
-                const sessionDuration = Math.min(2, slotDuration, hoursForCurrentStep, remainingHours);
-                const endTime = addHoursToTime(slot.start, sessionDuration);
-                
-                scheduledEvents.push({
-                    id: Date.now() + slotIndex,
-                    title: `📋 ${projectTitle} - ${steps[stepIndex].name}`,
-                    type: 'proyecto',
-                    date: slot.date,
-                    timeStart: slot.start,
-                    timeEnd: endTime,
-                    completed: false,
-                    priority: priority,
-                    deliveryDate: deliveryDate
-                });
-                
-                remainingHours -= sessionDuration;
-                hoursForCurrentStep -= sessionDuration;
-                
-                if (hoursForCurrentStep <= 0 && stepIndex < steps.length - 1) {
-                    stepIndex++;
-                    hoursForCurrentStep = steps[stepIndex].hours;
-                }
-                
-                slotIndex++;
-            }
-            
-            if (remainingHours > 0) {
-                alert(`⚠️ No hay suficiente tiempo disponible. Faltan ${remainingHours.toFixed(1)} horas por distribuir.`);
-            }
-        }
-
-        // ========== FUNCIONES AUXILIARES PARA DISTRIBUCIÓN ==========
-        function getAvailableSlots(startDate, endDate) {
-            const slots = [];
-            const current = new Date(startDate);
-            current.setHours(0, 0, 0, 0);
-            
-            // Ordenar eventos por prioridad y fecha
-            const sortedEvents = [...scheduledEvents].sort((a, b) => {
-                const priorityOrder = { alta: 1, media: 2, baja: 3 };
-                const aPriority = priorityOrder[a.priority] || 999;
-                const bPriority = priorityOrder[b.priority] || 999;
-                
-                if (aPriority !== bPriority) return aPriority - bPriority;
-                
-                const aTargetDate = new Date(a.examDate || a.deliveryDate || a.date);
-                const bTargetDate = new Date(b.examDate || b.deliveryDate || b.date);
-                return aTargetDate - bTargetDate;
-            });
-            
-            while (current <= endDate) {
-                const dateStr = current.toISOString().split('T')[0];
-                const daySchedule = scheduleSlots.filter(s => s.days.includes(current.getDay()));
-                
-                daySchedule.forEach(schedule => {
-                    // Comprobar si hay eventos que ocupan este slot
-                    const isOccupied = sortedEvents.some(event => {
-                        return event.date === dateStr && 
-                               timesOverlap(schedule.start, schedule.end, event.timeStart, event.timeEnd);
-                    });
-                    
-                    if (!isOccupied) {
-                        slots.push({
-                            date: dateStr,
-                            start: schedule.start,
-                            end: schedule.end
-                        });
-                    }
-                });
-                
-                current.setDate(current.getDate() + 1);
-            }
-            
-            return slots;
-        }
-
-        function timesOverlap(start1, end1, start2, end2) {
-            return (start1 < end2) && (end1 > start2);
-        }
-
-        function getSlotDuration(start, end) {
-            const [startH, startM] = start.split(':').map(Number);
-            const [endH, endM] = end.split(':').map(Number);
-            return (endH + endM/60) - (startH + startM/60);
-        }
-
-        function addHoursToTime(time, hours) {
+        // ========== UTILIDADES DE TIEMPO ==========
+        function addMinutesToTime(time, minutesToAdd) {
             const [h, m] = time.split(':').map(Number);
-            const totalMinutes = h * 60 + m + hours * 60;
-            const newH = Math.floor(totalMinutes / 60);
-            const newM = totalMinutes % 60;
+            const total = h * 60 + m + parseInt(minutesToAdd, 10);
+            const newH = Math.floor(total / 60) % 24;
+            const newM = total % 60;
             return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
-        }
-
-        // ========== CONFIGURACIÓN DE HORARIOS ==========
-        function renderScheduleConfig() {
-            const container = document.getElementById('scheduleList');
-            
-            if (scheduleSlots.length === 0) {
-                container.innerHTML = '<p style="color: var(--text-secondary);">No hay franjas horarias configuradas.</p>';
-                return;
-            }
-            
-            container.innerHTML = scheduleSlots.map((slot, index) => `
-                <div class="schedule-item">
-                    <select onchange="updateScheduleSlot(${index}, 'days', this.value)" multiple style="height: 80px;">
-                        <option value="1" ${slot.days.includes(1) ? 'selected' : ''}>Lunes</option>
-                        <option value="2" ${slot.days.includes(2) ? 'selected' : ''}>Martes</option>
-                        <option value="3" ${slot.days.includes(3) ? 'selected' : ''}>Miércoles</option>
-                        <option value="4" ${slot.days.includes(4) ? 'selected' : ''}>Jueves</option>
-                        <option value="5" ${slot.days.includes(5) ? 'selected' : ''}>Viernes</option>
-                        <option value="6" ${slot.days.includes(6) ? 'selected' : ''}>Sábado</option>
-                        <option value="0" ${slot.days.includes(0) ? 'selected' : ''}>Domingo</option>
-                    </select>
-                    <input type="time" value="${slot.start}" onchange="updateScheduleSlot(${index}, 'start', this.value)">
-                    <input type="time" value="${slot.end}" onchange="updateScheduleSlot(${index}, 'end', this.value)">
-                    <button class="btn-small btn-danger" onclick="deleteScheduleSlot(${index})">✕</button>
-                </div>
-            `).join('');
-        }
-
-        function addScheduleSlot() {
-            scheduleSlots.push({
-                days: [1, 2, 3, 4, 5], // Lunes a Viernes por defecto
-                start: '16:00',
-                end: '20:00'
-            });
-            renderScheduleConfig();
-        }
-
-        function updateScheduleSlot(index, field, value) {
-            if (field === 'days') {
-                const select = event.target;
-                scheduleSlots[index].days = Array.from(select.selectedOptions).map(o => parseInt(o.value));
-            } else {
-                scheduleSlots[index][field] = value;
-            }
-        }
-
-        function deleteScheduleSlot(index) {
-            scheduleSlots.splice(index, 1);
-            renderScheduleConfig();
         }
 
         // ========== CALENDARIO (FASE 3) ==========
@@ -1384,10 +1231,11 @@
             const dayEvents = scheduledEvents.filter(e => e.date === dateStr);
             
             let html = '';
-            for (let hour = 6; hour < 24; hour++) {
+            // Mostrar desde 00:00 hasta 23:00
+            for (let hour = 0; hour <= 23; hour++) {
                 const timeStr = `${String(hour).padStart(2, '0')}:00`;
                 const eventsInSlot = dayEvents.filter(e => {
-                    const eventHour = parseInt(e.timeStart.split(':')[0]);
+                    const eventHour = parseInt(e.timeStart.split(':')[0], 10);
                     return eventHour === hour;
                 });
                 
@@ -1422,7 +1270,8 @@
                 html += `<div class="week-header">${days[i + 1]} ${day.getDate()}</div>`;
             }
             
-            for (let hour = 6; hour < 24; hour++) {
+            // horas 00:00 - 23:00
+            for (let hour = 0; hour <= 23; hour++) {
                 const timeStr = `${String(hour).padStart(2, '0')}:00`;
                 html += `<div class="week-time">${timeStr}</div>`;
                 
@@ -1432,7 +1281,7 @@
                     const dateStr = day.toISOString().split('T')[0];
                     
                     const eventsInSlot = scheduledEvents.filter(e => {
-                        const eventHour = parseInt(e.timeStart.split(':')[0]);
+                        const eventHour = parseInt(e.timeStart.split(':')[0], 10);
                         return e.date === dateStr && eventHour === hour;
                     });
                     
@@ -1509,14 +1358,14 @@
         function drop(ev) {
             ev.preventDefault();
             const eventId = parseInt(ev.dataTransfer.getData('eventId'));
-            const event = scheduledEvents.find(e => e.id === eventId);
+            const eventObj = scheduledEvents.find(e => e.id === eventId);
             
-            if (event) {
+            if (eventObj) {
                 const newDate = ev.currentTarget.getAttribute('data-date');
                 const newTime = ev.currentTarget.getAttribute('data-time');
                 
-                if (newDate) event.date = newDate;
-                if (newTime) event.timeStart = newTime;
+                if (newDate) eventObj.date = newDate;
+                if (newTime) eventObj.timeStart = newTime;
                 
                 renderCalendar();
             }
@@ -1559,9 +1408,9 @@
         }
 
         function completeEvent(id) {
-            const event = scheduledEvents.find(e => e.id === id);
-            if (event) {
-                event.completed = true;
+            const ev = scheduledEvents.find(e => e.id === id);
+            if (ev) {
+                ev.completed = true;
                 renderTodayTasks();
             }
         }
