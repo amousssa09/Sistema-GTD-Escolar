@@ -528,25 +528,296 @@
             text-decoration: line-through;
         }
 
-        /* ========== MÉTRICAS ========== */
-        .metrics-grid {
+        /* ========== MÉTRICAS (MEJORADO) ========== */
+        .eval-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .eval-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
         }
 
-        .metric-card {
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-hover));
-            color: white;
-            padding: 24px;
+        .metric-panel {
+            background-color: var(--bg-card);
             border-radius: 12px;
-            text-align: center;
+            padding: 16px;
+            box-shadow: 0 6px 18px var(--shadow);
+            border: 2px solid var(--border-color);
         }
 
-        .metric-value {
-            font-size: 2.5rem;
-            font-weight: bold;
+        .metric-panel h3 {
             margin-bottom: 8px;
+            color: var(--accent-primary);
+            font-size: 1rem;
+        }
+
+        .metric-value-large {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .progress {
+            width: 100%;
+            height: 12px;
+            background: linear-gradient(90deg, rgba(0,0,0,0.06), rgba(0,0,0,0.04));
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--accent-primary);
+            width: 0%;
+            transition: width 400ms ease;
+        }
+
+        .traffic-light {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .light {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #444;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1) inset;
+            border: 2px solid rgba(255,255,255,0.06);
+        }
+
+        .light.green { background: var(--success); }
+        .light.yellow { background: var(--warning); }
+        .light.red { background: var(--danger); }
+
+        .feedback {
+            padding: 12px;
+            border-radius: 8px;
+            background-color: rgba(0,0,0,0.03);
+            color: var(--text-primary);
+        }
+
+        .reflection-panel {
+            margin-top: 18px;
+            display: grid;
+            gap: 12px;
+        }
+
+        .reflection-toggle {
+            background-color: var(--accent-primary);
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 300ms;
+            width: 100%;
+        }
+
+        .reflection-toggle:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .reflection-toggle.collapsed::after {
+            content: '▼';
+            font-size: 0.8rem;
+            transition: transform 300ms;
+        }
+
+        .reflection-toggle.expanded::after {
+            content: '▲';
+            font-size: 0.8rem;
+            transform: rotate(180deg);
+        }
+
+        .reflection-content {
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--bg-card);
+            display: none;
+        }
+
+        .reflection-content.active {
+            display: block;
+        }
+
+        .reflection-form-group {
+            margin-bottom: 12px;
+        }
+
+        .reflection-form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .reflection-form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border-radius: 6px;
+            border: 2px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            min-height: 60px;
+            resize: vertical;
+        }
+
+        .reflection-form-group button {
+            padding: 10px 16px;
+            font-size: 0.95rem;
+            margin-right: 8px;
+        }
+
+        .reflection-form-group button:last-of-type {
+            background-color: var(--danger);
+        }
+
+        .reflection-form-group button:last-of-type:hover {
+            background-color: #c0392b;
+        }
+
+        .improvements-section {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 2px solid var(--border-color);
+        }
+
+        .improvements-section h4 {
+            color: var(--accent-primary);
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+
+        .improvement-add {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .improvement-add input {
+            flex: 1;
+            padding: 8px;
+            border-radius: 6px;
+            border: 2px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .improvement-add button {
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .improvements-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .imp-item {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.05), rgba(52, 152, 219, 0.02));
+            border: 1px solid var(--border-color);
+            padding: 10px 12px;
+            border-radius: 6px;
+            transition: all 300ms;
+        }
+
+        .imp-item:hover {
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(52, 152, 219, 0.05));
+            border-color: var(--accent-primary);
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+
+        .imp-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .imp-item .text {
+            flex: 1;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            word-break: break-word;
+        }
+
+        .imp-item.done .text {
+            opacity: 0.6;
+            text-decoration: line-through;
+            color: var(--text-secondary);
+        }
+
+        .imp-actions {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .imp-actions button {
+            padding: 6px 10px;
+            font-size: 0.85rem;
+            border-radius: 4px;
+            background-color: var(--accent-primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 200ms;
+        }
+
+        .imp-actions button:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .imp-actions button:last-child {
+            background-color: var(--danger);
+        }
+
+        .imp-actions button:last-child:hover {
+            background-color: #c0392b;
+        }
+
+        .status-summary {
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 6px;
+            background-color: rgba(0,0,0,0.02);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            border-left: 4px solid var(--accent-primary);
+        }
+
+        @media (max-width: 768px) {
+            .eval-controls { flex-direction: column; align-items: stretch; }
+            .eval-grid { grid-template-columns: 1fr; }
+            .reflection-content { max-height: 400px; }
+            .imp-item { flex-wrap: wrap; }
+            .imp-actions { width: 100%; justify-content: flex-end; margin-top: 6px; }
         }
 
         /* ========== RESPONSIVE ========== */
@@ -681,25 +952,106 @@
         <!-- SECCIÓN 4: EVALUAR -->
         <div id="evaluar" class="section">
             <div class="card">
-                <h2>📊 Métricas</h2>
-                <div class="metrics-grid">
-                    <div class="metric-card">
-                        <div class="metric-value" id="metricCompleted">0</div>
-                        <div>Tareas Completadas</div>
+                <h2>📊 Métricas y Reflexión</h2>
+
+                <!-- Controls: periodo -->
+                <div class="eval-controls">
+                    <div>
+                        <label style="font-weight:600; margin-right:8px;">Periodo:</label>
+                        <button class="view-btn active" onclick="setEvalPeriod('day', event)">Diario</button>
+                        <button class="view-btn" onclick="setEvalPeriod('week', event)">Semanal</button>
+                        <button class="view-btn" onclick="setEvalPeriod('month', event)">Mensual</button>
                     </div>
-                    <div class="metric-card">
-                        <div class="metric-value" id="metricPending">0</div>
-                        <div>Pendientes</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value" id="metricExams">0</div>
-                        <div>Exámenes Preparados</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value" id="metricProjects">0</div>
-                        <div>Proyectos Completados</div>
+
+                    <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+                        <label style="font-weight:600;">Fecha revisión semanal:</label>
+                        <select id="weeklyReviewDay" style="padding:8px; border-radius:8px;" onchange="saveReflectionConfig()">
+                            <option value="0">Domingo</option>
+                            <option value="1">Lunes</option>
+                            <option value="2">Martes</option>
+                            <option value="3">Miércoles</option>
+                            <option value="4">Jueves</option>
+                            <option value="5">Viernes</option>
+                            <option value="6">Sábado</option>
+                        </select>
                     </div>
                 </div>
+
+                <!-- Grid métricas -->
+                <div class="eval-grid" id="evalGrid">
+                    <!-- Panels se rellenan desde JS -->
+                </div>
+
+                <!-- Traffic + feedback -->
+                <div style="display:flex; gap:12px; align-items:flex-start; margin-bottom:8px; flex-wrap:wrap;">
+                    <div class="metric-panel" style="min-width:220px; flex:1;">
+                        <h3>Rendimiento general</h3>
+                        <div class="metric-value-large" id="overallRate">0%</div>
+                        <div class="traffic-light" id="trafficLight">
+                            <div class="light red"></div>
+                            <div class="light yellow"></div>
+                            <div class="light green"></div>
+                        </div>
+                    </div>
+
+                    <div class="metric-panel" style="flex:2;">
+                        <h3>Feedback automático</h3>
+                        <div class="feedback" id="autoFeedback">Se mostrará feedback según tus métricas.</div>
+                    </div>
+                </div>
+
+                <!-- Reflexión manual - DESPLEGABLE -->
+                <div class="metric-panel reflection-panel">
+                    <button class="reflection-toggle collapsed" onclick="toggleReflectionPanel(event)">
+                        <span>📝 Reflexión semanal + Tareas de mejora</span>
+                    </button>
+
+                    <div class="reflection-content" id="reflectionContent">
+                        <!-- Formulario de reflexión -->
+                        <div class="reflection-form-group">
+                            <label>¿Qué utilidad has tenido esta semana?</label>
+                            <textarea id="q1" placeholder="Describe brevemente..."></textarea>
+                        </div>
+
+                        <div class="reflection-form-group">
+                            <label>Aspectos más útiles</label>
+                            <textarea id="q2" placeholder="¿Qué funcionó mejor?"></textarea>
+                        </div>
+
+                        <div class="reflection-form-group">
+                            <label>Aspectos innecesarios</label>
+                            <textarea id="q3" placeholder="¿Qué eliminarías o simplificarías?"></textarea>
+                        </div>
+
+                        <div class="reflection-form-group">
+                            <label>Mejoras a añadir (una por línea)</label>
+                            <textarea id="q4" placeholder="Añade sugerencias que se convertirán en tareas de mejora"></textarea>
+                        </div>
+
+                        <div class="reflection-form-group">
+                            <label>Opinión general</label>
+                            <textarea id="q5" placeholder="Resumen general..."></textarea>
+                        </div>
+
+                        <div class="reflection-form-group">
+                            <button onclick="saveReflection()">💾 Guardar reflexión</button>
+                            <button onclick="clearReflection()">🗑️ Limpiar</button>
+                        </div>
+
+                        <div class="status-summary" id="reflectionStatus"></div>
+
+                        <!-- Tareas de mejora dentro del desplegable -->
+                        <div class="improvements-section">
+                            <h4>✨ Tareas de mejora</h4>
+                            <div class="improvement-add">
+                                <input id="newImprovement" placeholder="Describe una mejora...">
+                                <button onclick="addImprovementFromInput()">➕ Añadir</button>
+                            </div>
+                            <div id="improvementsList" class="improvements-list"></div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -816,6 +1168,7 @@
         let currentDate = new Date();
         let currentView = 'day';
         let draggedEvent = null;
+        let evalPeriod = 'day'; // 'day' | 'week' | 'month'
 
         // ========== TEMA ==========
         function toggleTheme() {
@@ -1417,20 +1770,326 @@
 
         // ========== EVALUAR (FASE 4) ==========
         function renderMetrics() {
-            const completed = scheduledEvents.filter(e => e.completed).length;
-            const pending = scheduledEvents.filter(e => !e.completed).length;
-            const exams = scheduledEvents.filter(e => e.type === 'examen' && e.completed).length;
-            const projects = scheduledEvents.filter(e => e.type === 'proyecto' && e.completed).length;
-            
-            document.getElementById('metricCompleted').textContent = completed;
-            document.getElementById('metricPending').textContent = pending;
-            document.getElementById('metricExams').textContent = exams;
-            document.getElementById('metricProjects').textContent = projects;
+            // REMOVED - Esta función está siendo sobrescrita por renderEnhancedMetrics
+            // Mantenemos vacía para evitar conflictos
         }
 
         // ========== INICIALIZACIÓN ==========
         renderInbox();
         renderCalendar();
+
+        // CARGA E INICIO DE EVALUACIÓN
+        loadReflectionConfig();
+        loadImprovements();
+        renderEnhancedMetrics();
+
+        // ========== EVALUACIÓN MEJORADA ==========
+        function setEvalPeriod(p, ev) {
+            evalPeriod = p;
+            document.querySelectorAll('.eval-controls .view-btn').forEach(b => b.classList.remove('active'));
+            ev.currentTarget.classList.add('active');
+            renderEnhancedMetrics();
+        }
+
+        function getPeriodRange(baseDate = new Date()) {
+            const today = new Date(baseDate);
+            if (evalPeriod === 'day') {
+                const d = today.toISOString().split('T')[0];
+                return { start: d, end: d };
+            }
+            if (evalPeriod === 'week') {
+                const start = getWeekStart(today);
+                const end = new Date(start); end.setDate(end.getDate() + 6);
+                return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+            }
+            // month
+            const s = new Date(today.getFullYear(), today.getMonth(), 1);
+            const e = new Date(today.getFullYear(), today.getMonth()+1, 0);
+            return { start: s.toISOString().split('T')[0], end: e.toISOString().split('T')[0] };
+        }
+
+        function inRange(dateStr, range) {
+            return dateStr >= range.start && dateStr <= range.end;
+        }
+
+        function calcMetricsForPeriod() {
+            const range = getPeriodRange(currentDate);
+            const eventsInRange = scheduledEvents.filter(e => inRange(e.date, range));
+            const types = ['tarea','examen','proyecto'];
+            const result = {
+                period: range,
+                totalEvents: eventsInRange.length,
+                byType: {}
+            };
+            types.forEach(t => {
+                const items = eventsInRange.filter(e => e.type === t);
+                const completed = items.filter(i => i.completed).length;
+                const organized = items.length; // programados en el calendario
+                const incomplete = items.length - completed;
+                result.byType[t] = { items, count: items.length, completed, organized, incomplete };
+            });
+
+            // inbox unprocessed (inorganizados) - global count (no tipo)
+            const inboxUnprocessed = inbox.filter(i => !i.processed).length;
+            const inboxProcessed = inbox.filter(i => i.processed).length;
+            result.inboxUnprocessed = inboxUnprocessed;
+            result.inboxProcessed = inboxProcessed;
+            return result;
+        }
+
+        function percentage(n, total) {
+            if (total === 0) return 0;
+            return Math.round((n / total) * 100);
+        }
+
+        function renderEnhancedMetrics() {
+            // Panel de métricas por tipo con barras
+            const data = calcMetricsForPeriod();
+            const grid = document.getElementById('evalGrid');
+            grid.innerHTML = '';
+
+            const typesMap = { 'tarea': 'Tareas', 'examen': 'Exámenes', 'proyecto': 'Proyectos' };
+            let overallCompleted = 0;
+            let overallTotal = 0;
+
+            Object.keys(data.byType).forEach(type => {
+                const info = data.byType[type];
+                overallCompleted += info.completed;
+                overallTotal += info.count;
+
+                const pct = percentage(info.completed, Math.max(1, info.count));
+                const panel = document.createElement('div');
+                panel.className = 'metric-panel';
+                panel.innerHTML = `
+                    <h3>${typesMap[type]}</h3>
+                    <div class="metric-value-large">${info.count} items • ${info.completed} ✅</div>
+                    <div class="progress"><div class="progress-bar" id="bar-${type}" style="width:${pct}%;"></div></div>
+                    <div style="margin-top:8px; color:var(--text-secondary); font-size:0.95rem;">
+                        ${pct}% completado • ${info.incomplete} pendientes
+                    </div>
+                `;
+                grid.appendChild(panel);
+            });
+
+            // Overall rate
+            const overallPct = percentage(overallCompleted, Math.max(1, overallTotal));
+            document.getElementById('overallRate').textContent = `${overallPct}%`;
+
+            // Traffic light logic
+            const tl = document.getElementById('trafficLight');
+            const lights = tl.querySelectorAll('.light');
+            lights.forEach(l => l.style.opacity = '0.35');
+            if (overallPct >= 75) {
+                tl.querySelector('.light.green').style.opacity = '1';
+            } else if (overallPct >= 50) {
+                tl.querySelector('.light.yellow').style.opacity = '1';
+            } else {
+                tl.querySelector('.light.red').style.opacity = '1';
+            }
+
+            // Auto feedback
+            const feedbackEl = document.getElementById('autoFeedback');
+            let feedback = '';
+            if (overallPct >= 75) {
+                feedback += 'Buen trabajo general: alta proporción de elementos completados en este periodo. ';
+            } else if (overallPct >= 50) {
+                feedback += 'Rendimiento aceptable pero hay margen de mejora; prioriza tareas pendientes. ';
+            } else {
+                feedback += 'Rendimiento bajo: muchas tareas sin completar. Recomendado planificar bloques de trabajo. ';
+            }
+
+            const projPct = percentage(data.byType['proyecto'].completed, Math.max(1, data.byType['proyecto'].count));
+            if (projPct < 50 && data.byType['proyecto'].count > 0) {
+                feedback += 'Atención: proyectos con bajo avance. Divide proyectos en pasos menores y agéndalos.';
+            }
+
+            const examPct = percentage(data.byType['examen'].completed, Math.max(1, data.byType['examen'].count));
+            if (examPct < 60 && data.byType['examen'].count > 0) {
+                feedback += ' Para exámenes, aumenta sesiones cortas de estudio y repaso espaciado.';
+            }
+
+            if (data.inboxUnprocessed > 0) {
+                feedback += ` Tienes ${data.inboxUnprocessed} items sin procesar en el inbox — vacía tu inbox para mantener organizado el sistema.`;
+            }
+
+            feedbackEl.textContent = feedback;
+            updateReflectionStatus();
+        }
+
+        // ========== REFLEXIÓN Y TAREAS DE MEJORA ==========
+        function saveReflectionConfig() {
+            const day = document.getElementById('weeklyReviewDay').value;
+            const cfg = getReflectionConfig();
+            cfg.reviewDay = parseInt(day, 10);
+            localStorage.setItem('gtd_reflection_cfg', JSON.stringify(cfg));
+        }
+
+        function loadReflectionConfig() {
+            const raw = localStorage.getItem('gtd_reflection_cfg');
+            let cfg = { reviewDay: 1 }; // lunes por defecto
+            if (raw) {
+                try { cfg = JSON.parse(raw); } catch(e){}
+            }
+            document.getElementById('weeklyReviewDay').value = cfg.reviewDay;
+        }
+
+        function getReflectionConfig() {
+            const raw = localStorage.getItem('gtd_reflection_cfg');
+            if (!raw) return { reviewDay: 1 };
+            try { return JSON.parse(raw); } catch(e){ return { reviewDay:1 }; }
+        }
+
+        function saveReflection() {
+            const resp = {
+                q1: document.getElementById('q1').value.trim(),
+                q2: document.getElementById('q2').value.trim(),
+                q3: document.getElementById('q3').value.trim(),
+                q4: document.getElementById('q4').value.trim(),
+                q5: document.getElementById('q5').value.trim(),
+                date: new Date().toISOString()
+            };
+            localStorage.setItem('gtd_reflection_latest', JSON.stringify(resp));
+
+            // Convert q4 lines into improvements
+            const lines = resp.q4.split('\n').map(l => l.trim()).filter(Boolean);
+            lines.forEach(l => addImprovement(l));
+            alert('Reflexión guardada y mejoras añadidas (si las hubo).');
+            renderEnhancedMetrics();
+        }
+
+        function clearReflection() {
+            document.getElementById('q1').value = '';
+            document.getElementById('q2').value = '';
+            document.getElementById('q3').value = '';
+            document.getElementById('q4').value = '';
+            document.getElementById('q5').value = '';
+        }
+
+        function updateReflectionStatus() {
+            const latestRaw = localStorage.getItem('gtd_reflection_latest');
+            let txt = '';
+            if (!latestRaw) {
+                txt = 'No hay reflexiones guardadas todavía. Configura tu día de revisión semanal y realiza una reflexión.';
+            } else {
+                try {
+                    const obj = JSON.parse(latestRaw);
+                    txt = `Última reflexión: ${new Date(obj.date).toLocaleString()}. Resumen: "${(obj.q5||'sin resumen').slice(0,120)}"`;
+                } catch(e) {
+                    txt = 'Estado de reflexión no disponible.';
+                }
+            }
+
+            // Also include improvements summary
+            const improvements = loadImprovements();
+            const pending = improvements.filter(i => !i.done).length;
+            const completed = improvements.filter(i => i.done).length;
+            txt += ` | Mejoras: ${completed} completadas, ${pending} pendientes.`;
+            document.getElementById('reflectionStatus').textContent = txt;
+        }
+
+        // ========== TOGGLE REFLEXIÓN ==========
+        function toggleReflectionPanel(event) {
+            const btn = event.currentTarget;
+            const content = document.getElementById('reflectionContent');
+            btn.classList.toggle('collapsed');
+            btn.classList.toggle('expanded');
+            content.classList.toggle('active');
+        }
+
+        // ========== MEJORAS (LOCAL STORAGE) ==========
+        function loadImprovements() {
+            const raw = localStorage.getItem('gtd_improvements');
+            let list = [];
+            if (raw) {
+                try { list = JSON.parse(raw); } catch(e) { list = []; }
+            }
+            renderImprovements(list);
+            return list;
+        }
+
+        function persistImprovements(list) {
+            localStorage.setItem('gtd_improvements', JSON.stringify(list));
+            renderImprovements(list);
+            updateReflectionStatus();
+        }
+
+        function addImprovementFromInput() {
+            const v = document.getElementById('newImprovement').value.trim();
+            if (!v) return;
+            addImprovement(v);
+            document.getElementById('newImprovement').value = '';
+        }
+
+        function addImprovement(text) {
+            const list = loadImprovements();
+            const item = { id: Date.now() + Math.floor(Math.random()*999), text, done: false };
+            list.push(item);
+            persistImprovements(list);
+        }
+
+        function renderImprovements(list) {
+            const container = document.getElementById('improvementsList');
+            container.innerHTML = '';
+            list.forEach(it => {
+                const div = document.createElement('div');
+                div.className = 'imp-item';
+                div.innerHTML = `
+                    <input type="checkbox" ${it.done ? 'checked' : ''} onchange="toggleImp(${it.id})">
+                    <div class="text" contenteditable="false" id="imp-text-${it.id}">${escapeHtml(it.text)}</div>
+                    <div class="imp-actions">
+                        <button onclick="editImp(${it.id})">✏️</button>
+                        <button onclick="deleteImp(${it.id})">🗑️</button>
+                    </div>
+                `;
+                if (it.done) div.style.opacity = '0.6';
+                container.appendChild(div);
+            });
+        }
+
+        function toggleImp(id) {
+            const list = loadImprovements();
+            const idx = list.findIndex(i => i.id === id);
+            if (idx === -1) return;
+            list[idx].done = !list[idx].done;
+            
+            // Si está completada, eliminar automáticamente después de 500ms
+            if (list[idx].done) {
+                setTimeout(() => {
+                    let updatedList = loadImprovements();
+                    updatedList = updatedList.filter(i => i.id !== id);
+                    persistImprovements(updatedList);
+                }, 500);
+            } else {
+                persistImprovements(list);
+            }
+        }
+
+        function editImp(id) {
+            const el = document.getElementById(`imp-text-${id}`);
+            if (!el) return;
+            const isEditing = el.getAttribute('contenteditable') === 'true';
+            if (isEditing) {
+                // save
+                el.setAttribute('contenteditable', 'false');
+                const newText = el.textContent.trim();
+                const list = loadImprovements();
+                const idx = list.findIndex(i => i.id === id);
+                if (idx !== -1) { list[idx].text = newText; persistImprovements(list); }
+            } else {
+                el.setAttribute('contenteditable', 'true');
+                el.focus();
+            }
+        }
+
+        function deleteImp(id) {
+            let list = loadImprovements();
+            list = list.filter(i => i.id !== id);
+            persistImprovements(list);
+        }
+
+        function escapeHtml(s) {
+            return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]));
+        }
     </script>
 </body>
 </html>
