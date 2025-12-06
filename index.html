@@ -1666,12 +1666,16 @@
                     <div class="time-slot" data-time="${timeStr}">
                         <div class="time-label">${timeStr}</div>
                         <div class="time-content" ondrop="drop(event)" ondragover="allowDrop(event)" data-date="${dateStr}" data-time="${timeStr}">
-                            ${eventsInSlot.map(e => `
-                                <div class="event-block ${e.type}" draggable="true" ondragstart="drag(event)" data-id="${e.id}">
-                                    <strong>${e.title}</strong><br>
-                                    <small>${e.timeStart} - ${e.timeEnd}</small>
-                                </div>
-                            `).join('')}
+                            ${eventsInSlot.map(e => {
+                                const minutes = calculateDuration(e.timeStart, e.timeEnd);
+                                const heightPercent = (minutes / 60) * 100;
+                                return `
+                                    <div class="event-block ${e.type}" draggable="true" ondragstart="drag(event)" onclick="editEventTimePeriod(event, ${e.id})" data-id="${e.id}" style="height: ${heightPercent}%; min-height: auto; display: flex; flex-direction: column; justify-content: center;">
+                                        <strong>${e.title}</strong>
+                                        <small>${e.timeStart} - ${e.timeEnd}</small>
+                                    </div>
+                                `;
+                            }).join('')}
                         </div>
                     </div>
                 `;
@@ -1709,11 +1713,15 @@
                     
                     html += `
                         <div class="week-cell" ondrop="drop(event)" ondragover="allowDrop(event)" data-date="${dateStr}" data-time="${timeStr}">
-                            ${eventsInSlot.map(e => `
-                                <div class="event-block ${e.type}" draggable="true" ondragstart="drag(event)" data-id="${e.id}" style="font-size: 0.75rem;">
-                                    ${e.title.substring(0, 20)}...
-                                </div>
-                            `).join('')}
+                            ${eventsInSlot.map(e => {
+                                const minutes = calculateDuration(e.timeStart, e.timeEnd);
+                                const heightPercent = (minutes / 60) * 100;
+                                return `
+                                    <div class="event-block ${e.type}" draggable="true" ondragstart="drag(event)" onclick="editEventTimePeriod(event, ${e.id})" data-id="${e.id}" style="font-size: 0.75rem; height: ${heightPercent}%; min-height: auto; display: flex; flex-direction: column; justify-content: center;">
+                                        ${e.title.substring(0, 20)}...
+                                    </div>
+                                `;
+                            }).join('')}
                         </div>
                     `;
                 }
@@ -1746,7 +1754,7 @@
                     <div class="month-day">
                         <div class="month-day-header">${day}</div>
                         ${dayEvents.map(e => `
-                            <div class="month-event ${e.type}" onclick="alert('${e.title}\\n${e.timeStart} - ${e.timeEnd}')">
+                            <div class="month-event ${e.type}" onclick="editEventTimePeriod(event, ${e.id})" style="cursor:pointer;">
                                 ${e.title.substring(0, 15)}...
                             </div>
                         `).join('')}
@@ -1782,6 +1790,25 @@
             const eventId = parseInt(ev.target.getAttribute('data-id'));
             ev.dataTransfer.setData('eventId', eventId);
             ev.target.classList.add('dragging');
+        }
+
+        function editEventTimePeriod(e, eventId) {
+            // Detener propagación para evitar que se active el drag
+            e.stopPropagation();
+            
+            const eventObj = scheduledEvents.find(ev => ev.id === eventId);
+            if (!eventObj) return;
+            
+            const newStart = prompt('Nueva hora de inicio (HH:MM):', eventObj.timeStart);
+            if (!newStart) return;
+            
+            const newEnd = prompt('Nueva hora de fin (HH:MM):', eventObj.timeEnd);
+            if (!newEnd) return;
+            
+            eventObj.timeStart = newStart;
+            eventObj.timeEnd = newEnd;
+            persistData();
+            renderCalendar();
         }
 
         function drop(ev) {
