@@ -1280,7 +1280,9 @@
         function discardItem() {
             if (currentProcessingItem) {
                 currentProcessingItem.processed = true;
+                renderInbox();
                 renderProcessArea();
+                persistData();
             }
         }
 
@@ -1297,20 +1299,29 @@
         function taskForToday() {
             if (!currentProcessingItem) return;
             
+            // Pedir hora de inicio y fin
+            const timeStart = prompt('Hora de inicio (HH:MM)', '09:00');
+            if (!timeStart) return;
+            
+            const timeEnd = prompt('Hora de fin (HH:MM)', '10:00');
+            if (!timeEnd) return;
+            
             const today = new Date().toISOString().split('T')[0];
             scheduledEvents.push({
                 id: Date.now(),
                 title: currentProcessingItem.text,
                 type: 'tarea',
                 date: today,
-                timeStart: '09:00',
-                timeEnd: '10:00',
+                timeStart: timeStart,
+                timeEnd: timeEnd,
                 completed: false
             });
             
             currentProcessingItem.processed = true;
             closeModal('taskModal');
+            renderInbox();
             renderProcessArea();
+            persistData();
             alert('✅ Tarea añadida a HOY');
         }
 
@@ -1391,14 +1402,15 @@
                 return;
             }
             
-            // Interacción para distribuir por días/grupos
             const groupsCount = parseInt(prompt('¿En cuántos grupos/días quieres repartir el estudio? (ej. 2)'), 10);
             if (!groupsCount || groupsCount < 1) {
                 alert('Operación cancelada');
                 return;
             }
             
-            // Para cada grupo, preguntar índices de temas asignados y la fecha; para cada tema pedir hora de inicio
+            let hasConflict = false;
+            const tempEvents = [];
+            
             for (let g = 0; g < groupsCount; g++) {
                 const indicesStr = prompt(`Grupo ${g+1}: ingresa los números de punto separados por comas (ej. 1,2)`);
                 if (!indicesStr) continue;
@@ -1412,24 +1424,45 @@
                     const start = prompt(`Tema "${topic.name}" - Fecha ${date}: Hora de inicio (HH:MM)`);
                     if (!start) return;
                     const end = addMinutesToTime(start, topic.minutes);
-                    scheduledEvents.push({
-                        id: Date.now() + Math.floor(Math.random()*10000),
-                        title: `📚 ${currentProcessingItem.text} - ${topic.name}`,
-                        type: 'examen',
-                        date: date,
-                        timeStart: start,
-                        timeEnd: end,
-                        completed: false,
-                        priority: priority,
-                        examDate: examDate
+                    
+                    // Verificar conflictos
+                    const conflict = tempEvents.some(e => e.date === date && e.timeStart === start);
+                    if (conflict) {
+                        hasConflict = true;
+                    }
+                    
+                    tempEvents.push({
+                        date, timeStart: start, timeEnd: end, title: `${topic.name}`
                     });
                 });
             }
             
+            if (hasConflict) {
+                alert('⚠️ ERROR: Has asignado múltiples puntos a la misma hora en el mismo día. Por favor, recomienza la distribución y ajusta los horarios.');
+                return;
+            }
+            
+            // Si no hay conflictos, guardar
+            tempEvents.forEach(te => {
+                scheduledEvents.push({
+                    id: Date.now() + Math.floor(Math.random()*10000),
+                    title: `📚 ${currentProcessingItem.text} - ${te.title}`,
+                    type: 'examen',
+                    date: te.date,
+                    timeStart: te.timeStart,
+                    timeEnd: te.timeEnd,
+                    completed: false,
+                    priority: priority,
+                    examDate: examDate
+                });
+            });
+            
             currentProcessingItem.processed = true;
             closeModal('examModal');
+            renderInbox();
             renderProcessArea();
-            alert('✅ Examen distribuido en el calendario (según asignaciones)');
+            persistData();
+            alert('✅ Examen distribuido en el calendario');
         }
 
         // ========== PROCESAR PROYECTO ==========
@@ -1482,6 +1515,9 @@
                 return;
             }
             
+            let hasConflict = false;
+            const tempEvents = [];
+            
             for (let g = 0; g < groupsCount; g++) {
                 const indicesStr = prompt(`Grupo ${g+1}: ingresa los números de paso separados por comas (ej. 1,2)`);
                 if (!indicesStr) continue;
@@ -1495,33 +1531,45 @@
                     const start = prompt(`Paso "${step.name}" - Fecha ${date}: Hora de inicio (HH:MM)`);
                     if (!start) return;
                     const end = addMinutesToTime(start, step.minutes);
-                    scheduledEvents.push({
-                        id: Date.now() + Math.floor(Math.random()*10000),
-                        title: `📋 ${currentProcessingItem.text} - ${step.name}`,
-                        type: 'proyecto',
-                        date: date,
-                        timeStart: start,
-                        timeEnd: end,
-                        completed: false,
-                        priority: priority,
-                        deliveryDate: projectDate
+                    
+                    // Verificar conflictos
+                    const conflict = tempEvents.some(e => e.date === date && e.timeStart === start);
+                    if (conflict) {
+                        hasConflict = true;
+                    }
+                    
+                    tempEvents.push({
+                        date, timeStart: start, timeEnd: end, title: `${step.name}`
                     });
                 });
             }
             
+            if (hasConflict) {
+                alert('⚠️ ERROR: Has asignado múltiples pasos a la misma hora en el mismo día. Por favor, recomienza la distribución y ajusta los horarios.');
+                return;
+            }
+            
+            // Si no hay conflictos, guardar
+            tempEvents.forEach(te => {
+                scheduledEvents.push({
+                    id: Date.now() + Math.floor(Math.random()*10000),
+                    title: `📋 ${currentProcessingItem.text} - ${te.title}`,
+                    type: 'proyecto',
+                    date: te.date,
+                    timeStart: te.timeStart,
+                    timeEnd: te.timeEnd,
+                    completed: false,
+                    priority: priority,
+                    deliveryDate: projectDate
+                });
+            });
+            
             currentProcessingItem.processed = true;
             closeModal('projectModal');
+            renderInbox();
             renderProcessArea();
-            alert('✅ Proyecto distribuido en el calendario (según asignaciones)');
-        }
-
-        // ========== UTILIDADES DE TIEMPO ==========
-        function addMinutesToTime(time, minutesToAdd) {
-            const [h, m] = time.split(':').map(Number);
-            const total = h * 60 + m + parseInt(minutesToAdd, 10);
-            const newH = Math.floor(total / 60) % 24;
-            const newM = total % 60;
-            return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+            persistData();
+            alert('✅ Proyecto distribuido en el calendario');
         }
 
         // ========== CALENDARIO (FASE 3) ==========
@@ -1584,7 +1632,6 @@
             const dayEvents = scheduledEvents.filter(e => e.date === dateStr);
             
             let html = '';
-            // Mostrar desde 00:00 hasta 23:00
             for (let hour = 0; hour <= 23; hour++) {
                 const timeStr = `${String(hour).padStart(2, '0')}:00`;
                 const eventsInSlot = dayEvents.filter(e => {
@@ -1623,7 +1670,6 @@
                 html += `<div class="week-header">${days[i + 1]} ${day.getDate()}</div>`;
             }
             
-            // horas 00:00 - 23:00
             for (let hour = 0; hour <= 23; hour++) {
                 const timeStr = `${String(hour).padStart(2, '0')}:00`;
                 html += `<div class="week-time">${timeStr}</div>`;
@@ -1664,12 +1710,10 @@
             
             let html = '';
             
-            // Días anteriores del mes
             for (let i = 0; i < startDay; i++) {
                 html += '<div class="month-day" style="opacity: 0.3;"></div>';
             }
             
-            // Días del mes
             for (let day = 1; day <= lastDay.getDate(); day++) {
                 const date = new Date(year, month, day);
                 const dateStr = date.toISOString().split('T')[0];
@@ -1697,6 +1741,15 @@
             return new Date(d.setDate(diff));
         }
 
+        // ========== UTILIDADES DE TIEMPO ==========
+        function addMinutesToTime(time, minutesToAdd) {
+            const [h, m] = time.split(':').map(Number);
+            const total = h * 60 + m + parseInt(minutesToAdd, 10);
+            const newH = Math.floor(total / 60) % 24;
+            const newM = total % 60;
+            return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+        }
+
         // ========== DRAG AND DROP ==========
         function allowDrop(ev) {
             ev.preventDefault();
@@ -1718,12 +1771,23 @@
                 const newTime = ev.currentTarget.getAttribute('data-time');
                 
                 if (newDate) eventObj.date = newDate;
-                if (newTime) eventObj.timeStart = newTime;
+                if (newTime) {
+                    const duration = calculateDuration(eventObj.timeStart, eventObj.timeEnd);
+                    eventObj.timeStart = newTime;
+                    eventObj.timeEnd = addMinutesToTime(newTime, duration);
+                }
                 
+                persistData();
                 renderCalendar();
             }
             
             document.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
+        }
+
+        function calculateDuration(start, end) {
+            const [sh, sm] = start.split(':').map(Number);
+            const [eh, em] = end.split(':').map(Number);
+            return (eh * 60 + em) - (sh * 60 + sm);
         }
 
         // ========== HACER (FASE 5) ==========
@@ -1752,7 +1816,8 @@
                     </div>
                     <div>
                         ${!event.completed ? 
-                            `<button class="btn-success" onclick="completeEvent(${event.id})">✅ Completar</button>` :
+                            `<button class="btn-success" onclick="completeEvent(${event.id})">✅ Completar</button>
+                             <button class="btn-small" onclick="editEventTime(${event.id})" style="background-color: var(--accent-primary); margin-left: 8px;">⏱️ Ajustar</button>` :
                             '<span style="color: var(--success);">✅ Completada</span>'
                         }
                     </div>
@@ -1764,8 +1829,27 @@
             const ev = scheduledEvents.find(e => e.id === id);
             if (ev) {
                 ev.completed = true;
+                persistData();
                 renderTodayTasks();
+                renderEnhancedMetrics();
             }
+        }
+
+        function editEventTime(id) {
+            const ev = scheduledEvents.find(e => e.id === id);
+            if (!ev) return;
+            
+            const newStart = prompt('Nueva hora de inicio (HH:MM):', ev.timeStart);
+            if (!newStart) return;
+            
+            const newEnd = prompt('Nueva hora de fin (HH:MM):', ev.timeEnd);
+            if (!newEnd) return;
+            
+            ev.timeStart = newStart;
+            ev.timeEnd = newEnd;
+            persistData();
+            renderTodayTasks();
+            renderCalendar();
         }
 
         // ========== EVALUAR (FASE 4) ==========
@@ -1843,7 +1927,6 @@
         }
 
         function renderEnhancedMetrics() {
-            // Panel de métricas por tipo con barras
             const data = calcMetricsForPeriod();
             const grid = document.getElementById('evalGrid');
             grid.innerHTML = '';
@@ -1871,11 +1954,9 @@
                 grid.appendChild(panel);
             });
 
-            // Overall rate
             const overallPct = percentage(overallCompleted, Math.max(1, overallTotal));
             document.getElementById('overallRate').textContent = `${overallPct}%`;
 
-            // Traffic light logic
             const tl = document.getElementById('trafficLight');
             const lights = tl.querySelectorAll('.light');
             lights.forEach(l => l.style.opacity = '0.35');
@@ -1887,29 +1968,28 @@
                 tl.querySelector('.light.red').style.opacity = '1';
             }
 
-            // Auto feedback
             const feedbackEl = document.getElementById('autoFeedback');
             let feedback = '';
             if (overallPct >= 75) {
-                feedback += 'Buen trabajo general: alta proporción de elementos completados en este periodo. ';
+                feedback += '✅ Buen trabajo general: alta proporción de elementos completados en este periodo. ';
             } else if (overallPct >= 50) {
-                feedback += 'Rendimiento aceptable pero hay margen de mejora; prioriza tareas pendientes. ';
+                feedback += '⚠️ Rendimiento aceptable pero hay margen de mejora; prioriza tareas pendientes. ';
             } else {
-                feedback += 'Rendimiento bajo: muchas tareas sin completar. Recomendado planificar bloques de trabajo. ';
+                feedback += '❌ Rendimiento bajo: muchas tareas sin completar. Recomendado planificar bloques de trabajo. ';
             }
 
             const projPct = percentage(data.byType['proyecto'].completed, Math.max(1, data.byType['proyecto'].count));
             if (projPct < 50 && data.byType['proyecto'].count > 0) {
-                feedback += 'Atención: proyectos con bajo avance. Divide proyectos en pasos menores y agéndalos.';
+                feedback += '📌 Atención: proyectos con bajo avance. Divide proyectos en pasos menores y agéndalos.';
             }
 
             const examPct = percentage(data.byType['examen'].completed, Math.max(1, data.byType['examen'].count));
             if (examPct < 60 && data.byType['examen'].count > 0) {
-                feedback += ' Para exámenes, aumenta sesiones cortas de estudio y repaso espaciado.';
+                feedback += ' 📚 Para exámenes, aumenta sesiones cortas de estudio y repaso espaciado.';
             }
 
             if (data.inboxUnprocessed > 0) {
-                feedback += ` Tienes ${data.inboxUnprocessed} items sin procesar en el inbox — vacía tu inbox para mantener organizado el sistema.`;
+                feedback += ` 📥 Tienes ${data.inboxUnprocessed} items sin procesar en el inbox — vacía tu inbox para mantener organizado el sistema.`;
             }
 
             feedbackEl.textContent = feedback;
@@ -1973,18 +2053,20 @@
             } else {
                 try {
                     const obj = JSON.parse(latestRaw);
-                    txt = `Última reflexión: ${new Date(obj.date).toLocaleString()}. Resumen: "${(obj.q5||'sin resumen').slice(0,120)}"`;
+                    txt = `Última reflexión: ${new Date(obj.date).toLocaleString()}<br>`;
+                    txt += `📌 <strong>Mejoras sugeridas:</strong> ${obj.q4 || 'ninguna'}<br>`;
+                    txt += `⛔ <strong>Cosas innecesarias:</strong> ${obj.q3 || 'ninguna'}<br>`;
+                    txt += `💭 <strong>Resumen:</strong> "${(obj.q5||'sin resumen').slice(0,120)}"`;
                 } catch(e) {
                     txt = 'Estado de reflexión no disponible.';
                 }
             }
 
-            // Also include improvements summary
             const improvements = loadImprovements();
             const pending = improvements.filter(i => !i.done).length;
             const completed = improvements.filter(i => i.done).length;
-            txt += ` | Mejoras: ${completed} completadas, ${pending} pendientes.`;
-            document.getElementById('reflectionStatus').textContent = txt;
+            txt += `<br>📊 Mejoras: ${completed} completadas, ${pending} pendientes.`;
+            document.getElementById('reflectionStatus').innerHTML = txt;
         }
 
         // ========== TOGGLE REFLEXIÓN ==========
@@ -2090,6 +2172,33 @@
         function escapeHtml(s) {
             return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]));
         }
+
+        // ========== PERSISTENCIA DE DATOS ==========
+        function persistData() {
+            localStorage.setItem('gtd_inbox', JSON.stringify(inbox));
+            localStorage.setItem('gtd_events', JSON.stringify(scheduledEvents));
+        }
+
+        function loadData() {
+            const rawInbox = localStorage.getItem('gtd_inbox');
+            const rawEvents = localStorage.getItem('gtd_events');
+            
+            if (rawInbox) {
+                try { inbox = JSON.parse(rawInbox); } catch(e) { inbox = []; }
+            }
+            if (rawEvents) {
+                try { scheduledEvents = JSON.parse(rawEvents); } catch(e) { scheduledEvents = []; }
+            }
+        }
+
+        // ========== INICIALIZACIÓN ==========
+        loadData();
+        renderInbox();
+        renderCalendar();
+
+        loadReflectionConfig();
+        loadImprovements();
+        renderEnhancedMetrics();
     </script>
 </body>
 </html>
