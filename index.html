@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema GTD Académico</title>
+    <title>Sistema GTD Académico - Gamificado</title>
     <style>
         /* ========== VARIABLES DE TEMA ========== */
         :root {
@@ -122,6 +122,17 @@
             background-color: var(--accent-primary);
             color: white;
             border-color: var(--accent-primary);
+        }
+
+        .tab-btn.rpg-mode {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+            font-weight: 600;
+        }
+
+        .tab-btn.rpg-mode:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
         }
 
         /* ========== SECCIONES ========== */
@@ -355,7 +366,6 @@
             color: white;
         }
 
-        /* Vista Diaria */
         .day-view {
             display: none;
         }
@@ -373,7 +383,7 @@
         .time-slot {
             display: grid;
             grid-template-columns: 80px 1fr;
-            min-height: 60px;
+            min-height: 48px;
             border-bottom: 1px solid var(--border-color);
         }
 
@@ -412,7 +422,6 @@
             background-color: var(--warning);
         }
 
-        /* Vista Semanal */
         .week-view {
             display: none;
             overflow-x: auto;
@@ -454,7 +463,6 @@
             padding: 4px;
         }
 
-        /* Vista Mensual */
         .month-view {
             display: none;
         }
@@ -493,7 +501,6 @@
             cursor: pointer;
         }
 
-        /* ========== CONFIGURACIÓN HORARIOS ========== */
         .schedule-config {
             margin-top: 20px;
         }
@@ -506,7 +513,6 @@
             align-items: center;
         }
 
-        /* ========== LISTA DE TAREAS ========== */
         .task-list {
             display: flex;
             flex-direction: column;
@@ -528,7 +534,6 @@
             text-decoration: line-through;
         }
 
-        /* ========== MÉTRICAS (MEJORADO) ========== */
         .eval-controls {
             display: flex;
             gap: 10px;
@@ -812,26 +817,440 @@
             border-left: 4px solid var(--accent-primary);
         }
 
-        @media (max-width: 768px) {
-            .eval-controls { flex-direction: column; align-items: stretch; }
-            .eval-grid { grid-template-columns: 1fr; }
-            .reflection-content { max-height: 400px; }
-            .imp-item { flex-wrap: wrap; }
-            .imp-actions { width: 100%; justify-content: flex-end; margin-top: 6px; }
+        /* ========== MODO RPG - PIXEL ART ========== */
+        .rpg-container {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2d1b4e 100%);
+            border-radius: 0;
+            padding: 0;
+            min-height: 600px;
+            image-rendering: pixelated;
+            font-family: 'Courier New', monospace;
         }
 
-        /* ========== RESPONSIVE ========== */
-        @media (max-width: 768px) {
-            .process-container {
-                grid-template-columns: 1fr;
-            }
+        .rpg-header {
+            background: #0a0e27;
+            border-bottom: 4px solid #ffd700;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-            .schedule-item {
-                grid-template-columns: 1fr;
-            }
+        .rpg-title {
+            color: #ffd700;
+            font-size: 2rem;
+            text-shadow: 3px 3px 0 #000, -1px -1px 0 #000;
+            letter-spacing: 2px;
+        }
 
-            .time-slot {
-                grid-template-columns: 60px 1fr;
+        .rpg-stats {
+            display: flex;
+            gap: 20px;
+        }
+
+        .rpg-stat {
+            background: rgba(0,0,0,0.6);
+            border: 3px solid #4a90e2;
+            padding: 8px 16px;
+            border-radius: 4px;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .rpg-stat.coins {
+            border-color: #ffd700;
+            color: #ffd700;
+        }
+
+        .rpg-nav {
+            display: flex;
+            background: #1a1a2e;
+            border-bottom: 3px solid #4a90e2;
+        }
+
+        .rpg-nav-btn {
+            flex: 1;
+            padding: 16px;
+            background: transparent;
+            border: none;
+            border-right: 2px solid #4a90e2;
+            color: #ffffff;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+
+        .rpg-nav-btn:hover {
+            background: rgba(74, 144, 226, 0.2);
+        }
+
+        .rpg-nav-btn.active {
+            background: #4a90e2;
+            color: #0a0e27;
+        }
+
+        .rpg-nav-btn:last-child {
+            border-right: none;
+        }
+
+        .rpg-content {
+            padding: 30px;
+        }
+
+        .rpg-section {
+            display: none;
+        }
+
+        .rpg-section.active {
+            display: block;
+        }
+
+        .world-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .world-card {
+            background: rgba(0,0,0,0.7);
+            border: 4px solid #4a90e2;
+            border-radius: 8px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .world-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(74, 144, 226, 0.4);
+            border-color: #ffd700;
+        }
+
+        .world-card.active {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .world-card.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: #666;
+        }
+
+        .world-card.locked:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .world-name {
+            color: #ffd700;
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        .world-info {
+            color: #ffffff;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .world-requirements {
+            background: rgba(255, 215, 0, 0.1);
+            border: 2px solid #ffd700;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: #ffd700;
+        }
+
+        .lock-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 2rem;
+        }
+
+        .farm-area {
+            background: rgba(0,0,0,0.6);
+            border: 4px solid #4a90e2;
+            border-radius: 8px;
+            padding: 30px;
+            margin-top: 20px;
+        }
+
+        .farm-button {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            color: white;
+            border: 4px solid #1e8449;
+            padding: 20px 40px;
+            font-size: 1.4rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            display: block;
+            width: 100%;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        .farm-button:hover:not(:disabled) {
+            background: linear-gradient(135deg, #229954 0%, #27ae60 100%);
+            transform: scale(1.05);
+        }
+
+        .farm-button:disabled {
+            background: #555;
+            border-color: #333;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .cooldown-timer {
+            background: rgba(255, 0, 0, 0.2);
+            border: 2px solid #e74c3c;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            color: #e74c3c;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .loot-display {
+            background: rgba(255, 215, 0, 0.1);
+            border: 3px solid #ffd700;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .loot-title {
+            color: #ffd700;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            text-align: center;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        .loot-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .loot-item {
+            background: rgba(0,0,0,0.6);
+            border: 2px solid #4a90e2;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            color: #ffffff;
+        }
+
+        .loot-item.legendary {
+            border-color: #ff00ff;
+            box-shadow: 0 0 10px #ff00ff;
+        }
+
+        .loot-item.rare {
+            border-color: #ffd700;
+        }
+
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .inventory-item {
+            background: rgba(0,0,0,0.7);
+            border: 3px solid #4a90e2;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            color: #ffffff;
+            position: relative;
+        }
+
+        .inventory-item-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .inventory-item-name {
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .inventory-item-count {
+            background: rgba(255, 215, 0, 0.2);
+            border: 2px solid #ffd700;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 0.8rem;
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .shop-item {
+            background: rgba(0,0,0,0.7);
+            border: 3px solid #4a90e2;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .shop-item-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .shop-item-name {
+            color: #ffd700;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .shop-item-price {
+            background: rgba(255, 215, 0, 0.2);
+            border: 2px solid #ffd700;
+            padding: 8px;
+            border-radius: 4px;
+            color: #ffd700;
+            margin-bottom: 15px;
+        }
+
+        .shop-buy-btn {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            border: 3px solid #1e8449;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .shop-buy-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+        }
+
+        .shop-buy-btn:disabled {
+            background: #555;
+            border-color: #333;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .craft-panel {
+            background: rgba(0,0,0,0.7);
+            border: 4px solid #ffd700;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .craft-title {
+            color: #ffd700;
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        .craft-recipe {
+            background: rgba(255, 215, 0, 0.05);
+            border: 2px solid #4a90e2;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .craft-ingredients {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+
+        .craft-ingredient {
+            background: rgba(0,0,0,0.6);
+            border: 2px solid #4a90e2;
+            padding: 8px 12px;
+            border-radius: 4px;
+            color: #ffffff;
+        }
+
+        .craft-ingredient.insufficient {
+            border-color: #e74c3c;
+            color: #e74c3c;
+        }
+
+        .craft-ingredient.sufficient {
+            border-color: #27ae60;
+            color: #27ae60;
+        }
+
+        .craft-btn {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            border: 3px solid #d68910;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+        }
+
+        .craft-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+        }
+
+        .craft-btn:disabled {
+            background: #555;
+            border-color: #333;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.9);
+            border: 3px solid #ffd700;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: #ffd700;
+            font-weight: bold;
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
             }
         }
 
@@ -854,15 +1273,57 @@
         .badge-examen { background-color: var(--danger); color: white; }
         .badge-proyecto { background-color: var(--warning); color: white; }
 
-        /* Ajuste: contenedor scrollable para calendario */
         .calendar-scroll {
-            max-height: 480px; /* ajustable */
+            max-height: 480px;
             overflow-y: auto;
             padding-right: 8px;
         }
 
-        /* Ajuste: reducir espacio de horas para vista compacta */
-        .time-slot { min-height: 48px; }
+        @media (max-width: 768px) {
+            .process-container {
+                grid-template-columns: 1fr;
+            }
+
+            .schedule-item {
+                grid-template-columns: 1fr;
+            }
+
+            .time-slot {
+                grid-template-columns: 60px 1fr;
+            }
+
+            .eval-controls { 
+                flex-direction: column; 
+                align-items: stretch; 
+            }
+            
+            .eval-grid { 
+                grid-template-columns: 1fr; 
+            }
+            
+            .reflection-content { 
+                max-height: 400px; 
+            }
+            
+            .imp-item { 
+                flex-wrap: wrap; 
+            }
+            
+            .imp-actions { 
+                width: 100%; 
+                justify-content: flex-end; 
+                margin-top: 6px; 
+            }
+
+            .rpg-stats {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .world-selector {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -882,6 +1343,7 @@
             <button class="tab-btn" onclick="showSection('organizar')">3. Organizar</button>
             <button class="tab-btn" onclick="showSection('evaluar')">4. Evaluar</button>
             <button class="tab-btn" onclick="showSection('hacer')">5. Hacer (Hoy)</button>
+            <button class="tab-btn rpg-mode" onclick="showSection('rpg')">🎮 Modo RPG</button>
             <button class="tab-btn" onclick="showSection('configuracion')">⚙️ Configuración</button>
         </div>
 
@@ -893,8 +1355,7 @@
                     Captura rápidamente cualquier idea, tarea o recordatorio. No pienses, solo escribe.
                 </p>
                 <div class="inbox-input">
-                    <input type="text" id="inboxInput" placeholder="¿Qué necesitas recordar?" 
-                           onkeypress="if(event.key==='Enter') addToInbox()">
+                    <input type="text" id="inboxInput" placeholder="¿Qué necesitas recordar?" onkeypress="if(event.key==='Enter') addToInbox()">
                     <button onclick="addToInbox()">➕ Capturar</button>
                 </div>
                 <div id="inboxList" class="inbox-list"></div>
@@ -930,19 +1391,15 @@
                     <span id="currentDateDisplay" style="margin-left: 20px; font-weight: 600;"></span>
                 </div>
 
-                <!-- Envoltorio scrollable: las vistas quedan dentro -->
                 <div class="calendar-scroll">
-                    <!-- Vista Diaria -->
                     <div id="dayView" class="day-view active">
                         <div id="dayTimeSlots" class="time-slots"></div>
                     </div>
 
-                    <!-- Vista Semanal -->
                     <div id="weekView" class="week-view">
                         <div id="weekGrid" class="week-grid"></div>
                     </div>
 
-                    <!-- Vista Mensual -->
                     <div id="monthView" class="month-view">
                         <div id="monthGrid" class="month-grid"></div>
                     </div>
@@ -955,7 +1412,6 @@
             <div class="card">
                 <h2>📊 Métricas y Reflexión</h2>
 
-                <!-- Controls: periodo -->
                 <div class="eval-controls">
                     <div>
                         <label style="font-weight:600; margin-right:8px;">Periodo:</label>
@@ -978,12 +1434,8 @@
                     </div>
                 </div>
 
-                <!-- Grid métricas -->
-                <div class="eval-grid" id="evalGrid">
-                    <!-- Panels se rellenan desde JS -->
-                </div>
+                <div class="eval-grid" id="evalGrid"></div>
 
-                <!-- Traffic + feedback -->
                 <div style="display:flex; gap:12px; align-items:flex-start; margin-bottom:8px; flex-wrap:wrap;">
                     <div class="metric-panel" style="min-width:220px; flex:1;">
                         <h3>Rendimiento general</h3>
@@ -1001,14 +1453,12 @@
                     </div>
                 </div>
 
-                <!-- Reflexión manual - DESPLEGABLE -->
                 <div class="metric-panel reflection-panel">
                     <button class="reflection-toggle collapsed" onclick="toggleReflectionPanel(event)">
                         <span>📝 Reflexión semanal + Tareas de mejora</span>
                     </button>
 
                     <div class="reflection-content" id="reflectionContent">
-                        <!-- Formulario de reflexión -->
                         <div class="reflection-form-group">
                             <label>¿Qué utilidad has tenido esta semana?</label>
                             <textarea id="q1" placeholder="Describe brevemente..."></textarea>
@@ -1041,7 +1491,6 @@
 
                         <div class="status-summary" id="reflectionStatus"></div>
 
-                        <!-- Tareas de mejora dentro del desplegable -->
                         <div class="improvements-section">
                             <h4>✨ Tareas de mejora</h4>
                             <div class="improvement-add">
@@ -1064,7 +1513,51 @@
             </div>
         </div>
 
-        <!-- NUEVA SECCIÓN: CONFIGURACIÓN -->
+        <!-- SECCIÓN RPG -->
+        <div id="rpg" class="section">
+            <div class="card rpg-container">
+                <div class="rpg-header">
+                    <div class="rpg-title">⚔️ MODO RPG ⚔️</div>
+                    <div class="rpg-stats">
+                        <div class="rpg-stat">⭐ Puntos: <span id="rpgPoints">0</span></div>
+                        <div class="rpg-stat coins">💰 Monedas: <span id="rpgCoins">0</span></div>
+                    </div>
+                </div>
+
+                <div class="rpg-nav">
+                    <button class="rpg-nav-btn active" onclick="switchRPGSection('fishing')">🎣 PESCA</button>
+                    <button class="rpg-nav-btn" onclick="switchRPGSection('mining')">⛏️ MINERÍA</button>
+                    <button class="rpg-nav-btn" onclick="switchRPGSection('woodcutting')">🌲 TALA</button>
+                    <button class="rpg-nav-btn" onclick="switchRPGSection('inventory')">🎒 INVENTARIO</button>
+                    <button class="rpg-nav-btn" onclick="switchRPGSection('shop')">🏪 TIENDA</button>
+                </div>
+
+                <div class="rpg-content">
+                    <!-- PESCA -->
+                    <div id="rpg-fishing" class="rpg-section active"></div>
+
+                    <!-- MINERÍA -->
+                    <div id="rpg-mining" class="rpg-section"></div>
+
+                    <!-- TALA -->
+                    <div id="rpg-woodcutting" class="rpg-section"></div>
+
+                    <!-- INVENTARIO -->
+                    <div id="rpg-inventory" class="rpg-section">
+                        <h2 style="color: #ffd700; font-size: 2rem; margin-bottom: 20px; text-shadow: 2px 2px 0 #000;">🎒 TU INVENTARIO</h2>
+                        <div id="inventoryGrid" class="inventory-grid"></div>
+                    </div>
+
+                    <!-- TIENDA -->
+                    <div id="rpg-shop" class="rpg-section">
+                        <h2 style="color: #ffd700; font-size: 2rem; margin-bottom: 20px; text-shadow: 2px 2px 0 #000;">🏪 TIENDA</h2>
+                        <div id="shopGrid" class="shop-grid"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONFIGURACIÓN -->
         <div id="configuracion" class="section">
             <div class="card">
                 <h2>⚙️ Configuración e import/export</h2>
@@ -1075,7 +1568,6 @@
                 <div style="display:flex; gap:12px; flex-wrap:wrap;">
                     <button onclick="exportAll()">💾 Exportar progreso (.json)</button>
 
-                    <!-- Input oculto + botón para abrir diálogo -->
                     <input id="importFile" type="file" accept="application/json" style="display:none" onchange="importFileChange(event)">
                     <button onclick="document.getElementById('importFile').click()">📂 Importar progreso (.json)</button>
                 </div>
@@ -1087,7 +1579,7 @@
         </div>
     </div>
 
-    <!-- MODAL PARA PROCESAR TAREAS -->
+    <!-- MODALES DEL SISTEMA GTD -->
     <div id="taskModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1119,7 +1611,6 @@
         </div>
     </div>
 
-    <!-- MODAL PARA PROCESAR EXÁMENES -->
     <div id="examModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1151,7 +1642,6 @@
         </div>
     </div>
 
-    <!-- MODAL PARA PROCESAR PROYECTOS -->
     <div id="projectModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1191,7 +1681,219 @@
         let currentDate = new Date();
         let currentView = 'day';
         let draggedEvent = null;
-        let evalPeriod = 'day'; // 'day' | 'week' | 'month'
+        let evalPeriod = 'day';
+
+        // ========== DATOS RPG ==========
+        let rpgData = {
+            points: 0,
+            coins: 3000000,
+            inventory: {
+                cana_comun: 1,
+                pico_comun: 1,
+                hacha_comun: 1
+            },
+            tools: {
+                fishing: 'cana_comun',
+                mining: 'pico_comun',
+                woodcutting: 'hacha_comun'
+            },
+            unlockedWorlds: {
+                fishing: ['playa_serena'],
+                mining: ['caverna_sombria'],
+                woodcutting: ['bosque_roble']
+            },
+            currentWorld: {
+                fishing: 'playa_serena',
+                mining: 'caverna_sombria',
+                woodcutting: 'bosque_roble'
+            },
+            cooldowns: {
+                capture: 0,
+                process: 0
+            },
+            lastActions: {
+                capture: 0,
+                process: 0
+            }
+        };
+
+        // Configuración de mundos
+        const WORLDS_CONFIG = {
+            mining: {
+                caverna_sombria: {
+                    name: 'Caverna Sombría',
+                    guaranteed: [{item: 'piedra', chance: 100}],
+                    drops: [{item: 'hierro', chance: 30}],
+                    materials: [{item: 'fragmentos_roca', chance: 25}],
+                    treasures: [{item: 'monedas_oxidadas', chance: 10, coins: [100,200]}],
+                    baseCoins: 150,
+                    requiredTool: 'pico_comun',
+                    icon: '⛏️'
+                },
+                caverna_cristalina: {
+                    name: 'Caverna Cristalina',
+                    guaranteed: [{item: 'cobre', chance: 100}],
+                    drops: [{item: 'cristal', chance: 30}, {item: 'piedra', chance: 20}],
+                    materials: [{item: 'polvo_cristal', chance: 30}, {item: 'nucleo_cristalino', chance: 30}],
+                    treasures: [{item: 'amuleto_roto', chance: 12, coins: [200,300]}],
+                    baseCoins: 250,
+                    requiredTool: 'pico_hierro',
+                    craftRequirements: {piedra: 10, hierro: 5, coins: 200},
+                    icon: '⛏️'
+                },
+                abismo_profundo: {
+                    name: 'Abismo Profundo',
+                    guaranteed: [{item: 'plata', chance: 100}],
+                    drops: [{item: 'obsidiana', chance: 20}, {item: 'cobre', chance: 25}, {item: 'cristal_puro', chance: 8}],
+                    materials: [{item: 'nucleo_oscuro', chance: 35}, {item: 'eco_abisal', chance: 35}],
+                    treasures: [{item: 'reliquia_abisal', chance: 15, coins: [300,400]}],
+                    baseCoins: 350,
+                    requiredTool: 'pico_cristal',
+                    craftRequirements: {cristal: 10, cobre: 5, coins: 300},
+                    icon: '⛏️'
+                },
+                volcan_ardiente: {
+                    name: 'Volcán Ardiente',
+                    guaranteed: [{item: 'obsidiana', chance: 100}],
+                    drops: [{item: 'mithril', chance: 35}, {item: 'magma_solido', chance: 25}, {item: 'cristal_igneo', chance: 10}],
+                    materials: [{item: 'escamas_igneas', chance: 40}, {item: 'nucleo_magma', chance: 40}],
+                    treasures: [{item: 'corazon_volcan', chance: 18, coins: [400,500]}],
+                    baseCoins: 450,
+                    requiredTool: 'pico_obsidiana',
+                    craftRequirements: {obsidiana: 10, plata: 5, coins: 400},
+                    icon: '⛏️'
+                },
+                cripta_olvidada: {
+                    name: 'Cripta Olvidada',
+                    guaranteed: [{item: 'oro_puro', chance: 100}],
+                    drops: [{item: 'cristales_arcanos', chance: 40}, {item: 'prisma_ancestral', chance: 20}, {item: 'esquirla_vacio', chance: 10}],
+                    materials: [{item: 'fragmentos_legendarios', chance: 45}, {item: 'runa_antigua', chance: 45}],
+                    treasures: [{item: 'reliquia_ancestral', chance: 22, coins: [500,700]}],
+                    baseCoins: 600,
+                    requiredTool: 'pico_mithril',
+                    craftRequirements: {mithril: 10, escamas_igneas: 5, coins: 600},
+                    icon: '⛏️'
+                }
+            },
+            fishing: {
+                playa_serena: {
+                    name: 'Playa Serena',
+                    guaranteed: [{item: 'pez_comun', chance: 100}],
+                    drops: [{item: 'sardina', chance: 35}],
+                    materials: [{item: 'escamas_simples', chance: 25}],
+                    treasures: [{item: 'monedas_oxidadas', chance: 10, coins: [100,200]}],
+                    baseCoins: 150,
+                    requiredTool: 'cana_comun',
+                    icon: '🎣'
+                },
+                mar_profundo: {
+                    name: 'Mar Profundo',
+                    guaranteed: [{item: 'atun', chance: 100}],
+                    drops: [{item: 'pez_raro', chance: 35}, {item: 'pez_comun', chance: 20}],
+                    materials: [{item: 'perlas_pequenas', chance: 30}, {item: 'perla_brillante', chance: 30}],
+                    treasures: [{item: 'cofre_hundido', chance: 12, coins: [200,300]}],
+                    baseCoins: 250,
+                    requiredTool: 'cana_roble',
+                    craftRequirements: {madera_basica: 10, pez_comun: 5, coins: 200},
+                    icon: '🎣'
+                },
+                laguna_misteriosa: {
+                    name: 'Laguna Misteriosa',
+                    guaranteed: [{item: 'carpa_dorada', chance: 100}],
+                    drops: [{item: 'pez_magico', chance: 40}, {item: 'pez_raro', chance: 20}],
+                    materials: [{item: 'escamas_brillantes', chance: 35}, {item: 'escama_encantada', chance: 35}],
+                    treasures: [{item: 'amuleto_acuatico', chance: 15, coins: [300,400]}],
+                    baseCoins: 350,
+                    requiredTool: 'cana_plata',
+                    craftRequirements: {pez_raro: 10, perlas_pequenas: 5, coins: 300},
+                    icon: '🎣'
+                },
+                ciudadela_oceanica: {
+                    name: 'Ciudadela Oceánica',
+                    guaranteed: [{item: 'pez_exotico', chance: 100}],
+                    drops: [{item: 'tiburon_pequeno', chance: 30}, {item: 'leviatan_joven', chance: 10}],
+                    materials: [{item: 'coral_raro', chance: 40}, {item: 'coral_ancestral', chance: 40}],
+                    treasures: [{item: 'reliquia_marina', chance: 18, coins: [400,500]}],
+                    baseCoins: 450,
+                    requiredTool: 'cana_coral',
+                    craftRequirements: {escamas_brillantes: 10, pez_magico: 5, coins: 400},
+                    icon: '🎣'
+                },
+                lago_escarchado: {
+                    name: 'Lago Escarchado',
+                    guaranteed: [{item: 'pez_helado', chance: 100}],
+                    drops: [{item: 'trucha_cristalina', chance: 35}, {item: 'carpa_glacial', chance: 15}, {item: 'espiritu_hielo', chance: 15}],
+                    materials: [{item: 'cristales_acuaticos', chance: 45}, {item: 'perla_gelida', chance: 45}],
+                    treasures: [{item: 'tesoro_congelado', chance: 22, coins: [500,700]}],
+                    baseCoins: 600,
+                    requiredTool: 'cana_cristal',
+                    craftRequirements: {coral_raro: 10, escamas_brillantes: 5, coins: 600},
+                    icon: '🎣'
+                }
+            },
+            woodcutting: {
+                bosque_roble: {
+                    name: 'Bosque de Roble',
+                    guaranteed: [{item: 'madera_basica', chance: 100}],
+                    drops: [{item: 'semillas_comunes', chance: 30}],
+                    materials: [],
+                    treasures: [{item: 'monedas_oxidadas', chance: 10, coins: [100,150]}],
+                    baseCoins: 120,
+                    requiredTool: 'hacha_comun',
+                    icon: '🌲'
+                },
+                bosque_oscuro: {
+                    name: 'Bosque Oscuro',
+                    guaranteed: [{item: 'madera_oscura', chance: 100}],
+                    drops: [{item: 'corteza_dura', chance: 35}, {item: 'resina_cruda', chance: 20}],
+                    materials: [],
+                    treasures: [{item: 'amuleto_savia', chance: 12, coins: [200,250]}],
+                    baseCoins: 220,
+                    requiredTool: 'hacha_piedra',
+                    craftRequirements: {piedra: 10, madera_basica: 5, coins: 200},
+                    icon: '🌲'
+                },
+                bosque_pino: {
+                    name: 'Bosque de Pino',
+                    guaranteed: [{item: 'madera_ligera', chance: 100}],
+                    drops: [{item: 'resina', chance: 35}, {item: 'nucleo_pino', chance: 20}],
+                    materials: [],
+                    treasures: [{item: 'reliquia_arborea', chance: 15, coins: [300,350]}],
+                    baseCoins: 320,
+                    requiredTool: 'hacha_hierro',
+                    craftRequirements: {hierro: 10, madera_oscura: 5, coins: 300},
+                    icon: '🌲'
+                },
+                bosque_ebano: {
+                    name: 'Bosque de Ébano',
+                    guaranteed: [{item: 'madera_dura', chance: 100}],
+                    drops: [{item: 'fragmentos_magicos', chance: 35}, {item: 'esencia_ebano', chance: 20}],
+                    materials: [],
+                    treasures: [{item: 'corazon_arbol', chance: 18, coins: [400,500]}],
+                    baseCoins: 450,
+                    requiredTool: 'hacha_plata',
+                    craftRequirements: {plata: 10, corteza_dura: 5, coins: 400},
+                    icon: '🌲'
+                },
+                bosque_teca: {
+                    name: 'Bosque de Teca',
+                    guaranteed: [{item: 'madera_legendaria', chance: 100}],
+                    drops: [{item: 'esencia_arborea', chance: 40}],
+                    materials: [],
+                    treasures: [{item: 'reliquia_ancestral', chance: 22, coins: [600,800]}],
+                    baseCoins: 700,
+                    requiredTool: 'hacha_obsidiana',
+                    craftRequirements: {obsidiana: 10, madera_dura: 5, coins: 600},
+                    icon: '🌲'
+                }
+            }
+        };
+
+        const SHOP_ITEMS = [
+            {id: 'pico_comun', name: 'Pico Común', price: 100, icon: '⛏️', type: 'mining'},
+            {id: 'cana_comun', name: 'Caña Común', price: 100, icon: '🎣', type: 'fishing'},
+            {id: 'hacha_comun', name: 'Hacha Común', price: 100, icon: '🪓', type: 'woodcutting'}
+        ];
 
         // ========== TEMA ==========
         function toggleTheme() {
@@ -1212,6 +1914,386 @@
             if (sectionId === 'organizar') renderCalendar();
             if (sectionId === 'evaluar') renderMetrics();
             if (sectionId === 'hacer') renderTodayTasks();
+            if (sectionId === 'rpg') {
+                updateRPGDisplay();
+                renderRPGSection('fishing');
+            }
+        }
+
+        // ========== RPG NAVIGATION ==========
+        function switchRPGSection(section) {
+            document.querySelectorAll('.rpg-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.rpg-nav-btn').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById('rpg-' + section).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (section === 'fishing' || section === 'mining' || section === 'woodcutting') {
+                renderRPGSection(section);
+            } else if (section === 'inventory') {
+                renderInventory();
+            } else if (section === 'shop') {
+                renderShop();
+            }
+        }
+
+        // ========== RPG SYSTEM ==========
+        function updateRPGDisplay() {
+            document.getElementById('rpgPoints').textContent = rpgData.points;
+            document.getElementById('rpgCoins').textContent = rpgData.coins;
+        }
+
+        function addPoints(amount, reason) {
+            rpgData.points += amount;
+            updateRPGDisplay();
+            persistData();
+            showNotification(`+${amount} puntos (${reason})`);
+        }
+
+        function canPerformAction(actionType) {
+            const now = Date.now();
+            const cooldownHours = 2;
+            const cooldownMs = cooldownHours * 60 * 60 * 1000;
+            
+            if (!rpgData.lastActions[actionType]) return true;
+            
+            const timeSince = now - rpgData.lastActions[actionType];
+            return timeSince >= cooldownMs;
+        }
+
+        function getCooldownRemaining(actionType) {
+            const now = Date.now();
+            const cooldownHours = 2;
+            const cooldownMs = cooldownHours * 60 * 60 * 1000;
+            
+            if (!rpgData.lastActions[actionType]) return 0;
+            
+            const timeSince = now - rpgData.lastActions[actionType];
+            const remaining = cooldownMs - timeSince;
+            
+            return remaining > 0 ? remaining : 0;
+        }
+
+        function formatCooldown(ms) {
+            const hours = Math.floor(ms / (1000 * 60 * 60));
+            const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((ms % (1000 * 60)) / 1000);
+            return `${hours}h ${minutes}m ${seconds}s`;
+        }
+
+        function performFarmAction(activityType) {
+            if (rpgData.points < 1) {
+                showNotification('❌ Necesitas al menos 1 punto para farmear');
+                return;
+            }
+
+            const worldKey = rpgData.currentWorld[activityType];
+            const world = WORLDS_CONFIG[activityType][worldKey];
+            
+            if (!world) return;
+
+            // Verificar herramienta
+            if (!rpgData.tools[activityType] || rpgData.tools[activityType] !== world.requiredTool) {
+                showNotification('❌ No tienes la herramienta necesaria');
+                return;
+            }
+
+            // Consumir punto
+            rpgData.points -= 1;
+
+            // Generar loot
+            const loot = generateLoot(world);
+            
+            // Agregar al inventario
+            loot.items.forEach(item => {
+                if (!rpgData.inventory[item]) rpgData.inventory[item] = 0;
+                rpgData.inventory[item]++;
+            });
+
+            // Agregar monedas
+            rpgData.coins += loot.coins;
+
+            updateRPGDisplay();
+            persistData();
+            displayLoot(loot);
+            renderRPGSection(activityType);
+        }
+
+        function generateLoot(world) {
+            const loot = {items: [], coins: world.baseCoins};
+
+            // Guaranteed drops
+            world.guaranteed.forEach(drop => {
+                if (Math.random() * 100 < drop.chance) {
+                    loot.items.push(drop.item);
+                }
+            });
+
+            // Additional drops
+            world.drops.forEach(drop => {
+                if (Math.random() * 100 < drop.chance) {
+                    loot.items.push(drop.item);
+                }
+            });
+
+            // Materials
+            world.materials.forEach(material => {
+                if (Math.random() * 100 < material.chance) {
+                    loot.items.push(material.item);
+                }
+            });
+
+            // Treasures
+            world.treasures.forEach(treasure => {
+                if (Math.random() * 100 < treasure.chance) {
+                    loot.items.push(treasure.item);
+                    const bonusCoins = treasure.coins[0] + Math.floor(Math.random() * (treasure.coins[1] - treasure.coins[0]));
+                    loot.coins += bonusCoins;
+                }
+            });
+
+            return loot;
+        }
+
+        function displayLoot(loot) {
+            const container = document.getElementById('lootDisplay');
+            if (!container) return;
+
+            container.innerHTML = `
+                <div class="loot-title">¡RECOMPENSAS OBTENIDAS!</div>
+                <div class="loot-items">
+                    ${loot.items.map(item => `
+                        <div class="loot-item">
+                            ${formatItemName(item)}
+                        </div>
+                    `).join('')}
+                    <div class="loot-item" style="border-color: #ffd700;">
+                        💰 ${loot.coins} monedas
+                    </div>
+                </div>
+            `;
+
+            container.style.display = 'block';
+        }
+
+        function formatItemName(item) {
+            return item.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        }
+
+        function renderRPGSection(activityType) {
+            const container = document.getElementById(`rpg-${activityType}`);
+            const worlds = WORLDS_CONFIG[activityType];
+            const currentWorld = rpgData.currentWorld[activityType];
+
+            let html = '<h2 style="color: #ffd700; font-size: 2rem; margin-bottom: 20px; text-shadow: 2px 2px 0 #000;">';
+            html += activityType === 'fishing' ? '🎣 PESCA' : activityType === 'mining' ? '⛏️ MINERÍA' : '🌲 TALA';
+            html += '</h2>';
+
+            html += '<div class="world-selector">';
+            for (let [key, world] of Object.entries(worlds)) {
+                const isUnlocked = rpgData.unlockedWorlds[activityType].includes(key);
+                const isActive = currentWorld === key;
+                const lockClass = isUnlocked ? '' : 'locked';
+                const activeClass = isActive ? 'active' : '';
+
+                html += `
+                    <div class="world-card ${lockClass} ${activeClass}" onclick="selectWorld('${activityType}', '${key}')">
+                        ${!isUnlocked ? '<div class="lock-icon">🔒</div>' : ''}
+                        <div class="world-name">${world.name}</div>
+                        <div class="world-info">💰 ${world.baseCoins} monedas base</div>
+                        ${world.craftRequirements ? `
+                            <div class="world-requirements">
+                                <strong>Requiere craftear:</strong><br>
+                                ${Object.entries(world.craftRequirements).map(([item, qty]) => 
+ 
+                                    item === 'coins' ? `💰 ${qty} monedas` : `${formatItemName(item)}: ${qty}`
+                                ).join(', ')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            html += '</div>';
+
+            if (currentWorld) {
+                const world = worlds[currentWorld];
+                html += `
+                    <div class="farm-area">
+                        <button class="farm-button" onclick="performFarmAction('${activityType}')" ${rpgData.points < 1 ? 'disabled' : ''}>
+                            ${world.icon} FARMEAR EN ${world.name.toUpperCase()} (-1 punto)
+                        </button>
+                        <div id="lootDisplay" class="loot-display" style="display: none;"></div>
+                `;
+
+                // Mostrar crafteo si hay requisitos
+                if (world.craftRequirements && !rpgData.unlockedWorlds[activityType].includes(getNextWorld(activityType, currentWorld))) {
+                    const nextWorld = getNextWorld(activityType, currentWorld);
+                    if (nextWorld) {
+                        html += renderCraftPanel(activityType, nextWorld);
+                    }
+                }
+
+                html += '</div>';
+            }
+
+            container.innerHTML = html;
+        }
+
+        function getNextWorld(activityType, currentWorldKey) {
+            const worldKeys = Object.keys(WORLDS_CONFIG[activityType]);
+            const currentIndex = worldKeys.indexOf(currentWorldKey);
+            return currentIndex < worldKeys.length - 1 ? worldKeys[currentIndex + 1] : null;
+        }
+
+        function renderCraftPanel(activityType, nextWorldKey) {
+            const nextWorld = WORLDS_CONFIG[activityType][nextWorldKey];
+            if (!nextWorld.craftRequirements) return '';
+
+            const canCraft = Object.entries(nextWorld.craftRequirements).every(([item, qty]) => {
+                if (item === 'coins') return rpgData.coins >= qty;
+                return (rpgData.inventory[item] || 0) >= qty;
+            });
+
+            let html = `
+                <div class="craft-panel">
+                    <div class="craft-title">🔨 Craftear herramienta para ${nextWorld.name}</div>
+                    <div class="craft-recipe">
+                        <div class="craft-ingredients">
+            `;
+
+            for (let [item, qty] of Object.entries(nextWorld.craftRequirements)) {
+                const current = item === 'coins' ? rpgData.coins : (rpgData.inventory[item] || 0);
+                const sufficient = current >= qty;
+                html += `
+                    <div class="craft-ingredient ${sufficient ? 'sufficient' : 'insufficient'}">
+                        ${item === 'coins' ? '💰' : '📦'} ${formatItemName(item)}: ${current}/${qty}
+                    </div>
+                `;
+            }
+
+            html += `
+                        </div>
+                        <button class="craft-btn" onclick="craftTool('${activityType}', '${nextWorldKey}')" ${canCraft ? '' : 'disabled'}>
+                            🔨 CRAFTEAR ${nextWorld.requiredTool.toUpperCase()}
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            return html;
+        }
+
+        function craftTool(activityType, worldKey) {
+            const world = WORLDS_CONFIG[activityType][worldKey];
+            
+            // Verificar recursos
+            for (let [item, qty] of Object.entries(world.craftRequirements)) {
+                if (item === 'coins') {
+                    if (rpgData.coins < qty) {
+                        showNotification('❌ No tienes suficientes monedas');
+                        return;
+                    }
+                } else {
+                    if ((rpgData.inventory[item] || 0) < qty) {
+                        showNotification(`❌ No tienes suficiente ${formatItemName(item)}`);
+                        return;
+                    }
+                }
+            }
+
+            // Consumir recursos
+            for (let [item, qty] of Object.entries(world.craftRequirements)) {
+                if (item === 'coins') {
+                    rpgData.coins -= qty;
+                } else {
+                    rpgData.inventory[item] -= qty;
+                }
+            }
+
+            // Equipar herramienta y desbloquear mundo
+            rpgData.tools[activityType] = world.requiredTool;
+            rpgData.unlockedWorlds[activityType].push(worldKey);
+
+            updateRPGDisplay();
+            persistData();
+            showNotification(`✅ ¡${world.requiredTool} crafteado! Mundo desbloqueado`);
+            renderRPGSection(activityType);
+        }
+
+        function selectWorld(activityType, worldKey) {
+            if (!rpgData.unlockedWorlds[activityType].includes(worldKey)) {
+                showNotification('🔒 Mundo bloqueado. Craftea la herramienta necesaria.');
+                return;
+            }
+
+            rpgData.currentWorld[activityType] = worldKey;
+            persistData();
+            renderRPGSection(activityType);
+        }
+
+        function renderInventory() {
+            const container = document.getElementById('inventoryGrid');
+            const items = Object.entries(rpgData.inventory).filter(([item, qty]) => qty > 0);
+
+            if (items.length === 0) {
+                container.innerHTML = '<div class="empty-state" style="color: white;">Tu inventario está vacío. ¡Empieza a farmear!</div>';
+                return;
+            }
+
+            container.innerHTML = items.map(([item, qty]) => `
+                <div class="inventory-item">
+                    <div class="inventory-item-icon">📦</div>
+                    <div class="inventory-item-name">${formatItemName(item)}</div>
+                    <div class="inventory-item-count">x${qty}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderShop() {
+            const container = document.getElementById('shopGrid');
+            
+            container.innerHTML = SHOP_ITEMS.map(item => {
+                const canBuy = rpgData.coins >= item.price;
+                const alreadyOwned = rpgData.tools[item.type] === item.id;
+
+                return `
+                    <div class="shop-item">
+                        <div class="shop-item-icon">${item.icon}</div>
+                        <div class="shop-item-name">${item.name}</div>
+                        <div class="shop-item-price">💰 ${item.price} monedas</div>
+                        <button class="shop-buy-btn" onclick="buyItem('${item.id}', ${item.price}, '${item.type}')" 
+                            ${canBuy && !alreadyOwned ? '' : 'disabled'}>
+                            ${alreadyOwned ? '✅ COMPRADO' : canBuy ? '🛒 COMPRAR' : '🔒 SIN MONEDAS'}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function buyItem(itemId, price, type) {
+            if (rpgData.coins < price) {
+                showNotification('❌ No tienes suficientes monedas');
+                return;
+            }
+
+            rpgData.coins -= price;
+            rpgData.tools[type] = itemId;
+
+            updateRPGDisplay();
+            persistData();
+            showNotification(`✅ ¡${itemId} comprado!`);
+            renderShop();
+        }
+
+        function showNotification(message) {
+            const notif = document.createElement('div');
+            notif.className = 'notification';
+            notif.textContent = message;
+            document.body.appendChild(notif);
+
+            setTimeout(() => {
+                notif.remove();
+            }, 3000);
         }
 
         // ========== RECOPILAR (FASE 1) ==========
@@ -1226,9 +2308,36 @@
                 text: text,
                 processed: false
             });
+
+            // Añadir punto solo si no ha alcanzado el límite
+            const currentCaptureCount = rpgData.cooldowns.capture || 0;
+            
+            if (currentCaptureCount < 5) {
+                // Aún puede ganar puntos
+                addPoints(1, 'Capturar');
+                rpgData.cooldowns.capture = currentCaptureCount + 1;
+                
+                // Si alcanza 5, guardar timestamp para cooldown
+                if (rpgData.cooldowns.capture >= 5) {
+                    rpgData.lastActions.capture = Date.now();
+                }
+            } else {
+                // Ya alcanzó el límite, verificar si puede resetear
+                if (canPerformAction('capture')) {
+                    // Cooldown terminó, resetear contador
+                    rpgData.cooldowns.capture = 1;
+                    rpgData.lastActions.capture = 0;
+                    addPoints(1, 'Capturar');
+                } else {
+                    // Aún en cooldown
+                    const remaining = getCooldownRemaining('capture');
+                    showNotification(`⏳ Límite de puntos alcanzado. Cooldown: ${formatCooldown(remaining)}`);
+                }
+            }
             
             input.value = '';
             renderInbox();
+            persistData();
         }
 
         function renderInbox() {
@@ -1253,6 +2362,7 @@
         function deleteInboxItem(id) {
             inbox = inbox.filter(item => item.id !== id);
             renderInbox();
+            persistData();
         }
 
         // ========== PROCESAR (FASE 2) ==========
@@ -1285,16 +2395,35 @@
         }
 
         function processAsTarea() {
+            // Verificar cooldown
+            if (!canPerformAction('process')) {
+                const remaining = getCooldownRemaining('process');
+                showNotification(`⏳ Cooldown activo: ${formatCooldown(remaining)}`);
+                return;
+            }
+
             openModal('taskModal');
         }
 
         function processAsExamen() {
+            if (!canPerformAction('process')) {
+                const remaining = getCooldownRemaining('process');
+                showNotification(`⏳ Cooldown activo: ${formatCooldown(remaining)}`);
+                return;
+            }
+
             openModal('examModal');
             document.getElementById('examTopicsList').innerHTML = '';
             addExamTopic();
         }
 
         function processAsProyecto() {
+            if (!canPerformAction('process')) {
+                const remaining = getCooldownRemaining('process');
+                showNotification(`⏳ Cooldown activo: ${formatCooldown(remaining)}`);
+                return;
+            }
+
             openModal('projectModal');
             document.getElementById('projectStepsList').innerHTML = '';
             addProjectStep();
@@ -1303,6 +2432,15 @@
         function discardItem() {
             if (currentProcessingItem) {
                 currentProcessingItem.processed = true;
+
+                // Añadir punto
+                const currentProcessCount = rpgData.cooldowns.process || 0;
+                if (currentProcessCount < 5) {
+                    addPoints(1, 'Procesar');
+                    rpgData.cooldowns.process = currentProcessCount + 1;
+                    rpgData.lastActions.process = Date.now();
+                }
+
                 renderInbox();
                 renderProcessArea();
                 persistData();
@@ -1322,7 +2460,6 @@
         function taskForToday() {
             if (!currentProcessingItem) return;
             
-            // Pedir hora de inicio y fin
             const timeStart = prompt('Hora de inicio (HH:MM)', '09:00');
             if (!timeStart) return;
             
@@ -1341,6 +2478,15 @@
             });
             
             currentProcessingItem.processed = true;
+
+            // Añadir punto por procesar
+            const currentProcessCount = rpgData.cooldowns.process || 0;
+            if (currentProcessCount < 5) {
+                addPoints(1, 'Procesar');
+                rpgData.cooldowns.process = currentProcessCount + 1;
+                rpgData.lastActions.process = Date.now();
+            }
+
             closeModal('taskModal');
             renderInbox();
             renderProcessArea();
@@ -1375,9 +2521,19 @@
             });
             
             currentProcessingItem.processed = true;
+
+            // Añadir punto
+            const currentProcessCount = rpgData.cooldowns.process || 0;
+            if (currentProcessCount < 5) {
+                addPoints(1, 'Procesar');
+                rpgData.cooldowns.process = currentProcessCount + 1;
+                rpgData.lastActions.process = Date.now();
+            }
+
             closeModal('taskModal');
             document.getElementById('scheduleTaskForm').style.display = 'none';
             renderProcessArea();
+            persistData();
             alert('✅ Tarea agendada');
         }
 
@@ -1448,7 +2604,6 @@
                     if (!start) return;
                     const end = addMinutesToTime(start, topic.minutes);
                     
-                    // Verificar conflictos
                     const conflict = tempEvents.some(e => e.date === date && e.timeStart === start);
                     if (conflict) {
                         hasConflict = true;
@@ -1465,7 +2620,6 @@
                 return;
             }
             
-            // Si no hay conflictos, guardar
             tempEvents.forEach(te => {
                 scheduledEvents.push({
                     id: Date.now() + Math.floor(Math.random()*10000),
@@ -1481,6 +2635,15 @@
             });
             
             currentProcessingItem.processed = true;
+
+            // Añadir punto
+            const currentProcessCount = rpgData.cooldowns.process || 0;
+            if (currentProcessCount < 5) {
+                addPoints(1, 'Procesar');
+                rpgData.cooldowns.process = currentProcessCount + 1;
+                rpgData.lastActions.process = Date.now();
+            }
+
             closeModal('examModal');
             renderInbox();
             renderProcessArea();
@@ -1555,7 +2718,6 @@
                     if (!start) return;
                     const end = addMinutesToTime(start, step.minutes);
                     
-                    // Verificar conflictos
                     const conflict = tempEvents.some(e => e.date === date && e.timeStart === start);
                     if (conflict) {
                         hasConflict = true;
@@ -1572,7 +2734,6 @@
                 return;
             }
             
-            // Si no hay conflictos, guardar
             tempEvents.forEach(te => {
                 scheduledEvents.push({
                     id: Date.now() + Math.floor(Math.random()*10000),
@@ -1588,6 +2749,15 @@
             });
             
             currentProcessingItem.processed = true;
+
+            // Añadir punto
+            const currentProcessCount = rpgData.cooldowns.process || 0;
+            if (currentProcessCount < 5) {
+                addPoints(1, 'Procesar');
+                rpgData.cooldowns.process = currentProcessCount + 1;
+                rpgData.lastActions.process = Date.now();
+            }
+
             closeModal('projectModal');
             renderInbox();
             renderProcessArea();
@@ -1772,7 +2942,6 @@
             return new Date(d.setDate(diff));
         }
 
-        // ========== UTILIDADES DE TIEMPO ==========
         function addMinutesToTime(time, minutesToAdd) {
             const [h, m] = time.split(':').map(Number);
             const total = h * 60 + m + parseInt(minutesToAdd, 10);
@@ -1781,7 +2950,6 @@
             return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
         }
 
-        // ========== DRAG AND DROP ==========
         function allowDrop(ev) {
             ev.preventDefault();
         }
@@ -1793,7 +2961,6 @@
         }
 
         function editEventTimePeriod(e, eventId) {
-            // Detener propagación para evitar que se active el drag
             e.stopPropagation();
             
             const eventObj = scheduledEvents.find(ev => ev.id === eventId);
@@ -1879,6 +3046,10 @@
             const ev = scheduledEvents.find(e => e.id === id);
             if (ev) {
                 ev.completed = true;
+                
+                // Añadir 1 punto por completar
+                addPoints(1, 'Completar tarea');
+
                 persistData();
                 renderTodayTasks();
                 renderEnhancedMetrics();
@@ -1904,20 +3075,9 @@
 
         // ========== EVALUAR (FASE 4) ==========
         function renderMetrics() {
-            // REMOVED - Esta función está siendo sobrescrita por renderEnhancedMetrics
-            // Mantenemos vacía para evitar conflictos
+            renderEnhancedMetrics();
         }
 
-        // ========== INICIALIZACIÓN ==========
-        renderInbox();
-        renderCalendar();
-
-        // CARGA E INICIO DE EVALUACIÓN
-        loadReflectionConfig();
-        loadImprovements();
-        renderEnhancedMetrics();
-
-        // ========== EVALUACIÓN MEJORADA ==========
         function setEvalPeriod(p, ev) {
             evalPeriod = p;
             document.querySelectorAll('.eval-controls .view-btn').forEach(b => b.classList.remove('active'));
@@ -1936,7 +3096,6 @@
                 const end = new Date(start); end.setDate(end.getDate() + 6);
                 return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
             }
-            // month
             const s = new Date(today.getFullYear(), today.getMonth(), 1);
             const e = new Date(today.getFullYear(), today.getMonth()+1, 0);
             return { start: s.toISOString().split('T')[0], end: e.toISOString().split('T')[0] };
@@ -1958,12 +3117,11 @@
             types.forEach(t => {
                 const items = eventsInRange.filter(e => e.type === t);
                 const completed = items.filter(i => i.completed).length;
-                const organized = items.length; // programados en el calendario
+                const organized = items.length;
                 const incomplete = items.length - completed;
                 result.byType[t] = { items, count: items.length, completed, organized, incomplete };
             });
 
-            // inbox unprocessed (inorganizados) - global count (no tipo)
             const inboxUnprocessed = inbox.filter(i => !i.processed).length;
             const inboxProcessed = inbox.filter(i => i.processed).length;
             result.inboxUnprocessed = inboxUnprocessed;
@@ -2039,7 +3197,7 @@
             }
 
             if (data.inboxUnprocessed > 0) {
-                feedback += ` 📥 Tienes ${data.inboxUnprocessed} items sin procesar en el inbox — vacía tu inbox para mantener organizado el sistema.`;
+                feedback += ` 📥 Tienes ${data.inboxUnprocessed} items sin procesar en el inbox – vacía tu inbox para mantener organizado el sistema.`;
             }
 
             feedbackEl.textContent = feedback;
@@ -2056,7 +3214,7 @@
 
         function loadReflectionConfig() {
             const raw = localStorage.getItem('gtd_reflection_cfg');
-            let cfg = { reviewDay: 1 }; // lunes por defecto
+            let cfg = { reviewDay: 1 };
             if (raw) {
                 try { cfg = JSON.parse(raw); } catch(e){}
             }
@@ -2066,7 +3224,7 @@
         function getReflectionConfig() {
             const raw = localStorage.getItem('gtd_reflection_cfg');
             if (!raw) return { reviewDay: 1 };
-            try { return JSON.parse(raw); } catch(e){ return { reviewDay:1 }; }
+            try { return JSON.parse(raw); } catch(e) { return { reviewDay:1 }; }
         }
 
         function saveReflection() {
@@ -2080,9 +3238,12 @@
             };
             localStorage.setItem('gtd_reflection_latest', JSON.stringify(resp));
 
-            // Convert q4 lines into improvements
             const lines = resp.q4.split('\n').map(l => l.trim()).filter(Boolean);
             lines.forEach(l => addImprovement(l));
+            
+            // Dar 5 puntos por reflexión semanal
+            addPoints(5, 'Revisión semanal');
+            
             alert('Reflexión guardada y mejoras añadidas (si las hubo).');
             renderEnhancedMetrics();
         }
@@ -2119,7 +3280,6 @@
             document.getElementById('reflectionStatus').innerHTML = txt;
         }
 
-        // ========== TOGGLE REFLEXIÓN ==========
         function toggleReflectionPanel(event) {
             const btn = event.currentTarget;
             const content = document.getElementById('reflectionContent');
@@ -2128,7 +3288,6 @@
             content.classList.toggle('active');
         }
 
-        // ========== MEJORAS (LOCAL STORAGE) ==========
         function loadImprovements() {
             const raw = localStorage.getItem('gtd_improvements');
             let list = [];
@@ -2184,8 +3343,10 @@
             if (idx === -1) return;
             list[idx].done = !list[idx].done;
             
-            // Si está completada, eliminar automáticamente después de 500ms
             if (list[idx].done) {
+                // Dar 1 punto por completar tarea de mejora
+                addPoints(1, 'Tarea de mejora completada');
+                
                 setTimeout(() => {
                     let updatedList = loadImprovements();
                     updatedList = updatedList.filter(i => i.id !== id);
@@ -2201,7 +3362,6 @@
             if (!el) return;
             const isEditing = el.getAttribute('contenteditable') === 'true';
             if (isEditing) {
-                // save
                 el.setAttribute('contenteditable', 'false');
                 const newText = el.textContent.trim();
                 const list = loadImprovements();
@@ -2227,11 +3387,13 @@
         function persistData() {
             localStorage.setItem('gtd_inbox', JSON.stringify(inbox));
             localStorage.setItem('gtd_events', JSON.stringify(scheduledEvents));
+            localStorage.setItem('gtd_rpg', JSON.stringify(rpgData));
         }
 
         function loadData() {
             const rawInbox = localStorage.getItem('gtd_inbox');
             const rawEvents = localStorage.getItem('gtd_events');
+            const rawRPG = localStorage.getItem('gtd_rpg');
             
             if (rawInbox) {
                 try { inbox = JSON.parse(rawInbox); } catch(e) { inbox = []; }
@@ -2239,16 +3401,45 @@
             if (rawEvents) {
                 try { scheduledEvents = JSON.parse(rawEvents); } catch(e) { scheduledEvents = []; }
             }
+            if (rawRPG) {
+                try { 
+                    rpgData = JSON.parse(rawRPG);
+                    // Asegurar que las herramientas equipadas estén en el inventario
+                    if (rpgData.tools.fishing && !rpgData.inventory[rpgData.tools.fishing]) {
+                        rpgData.inventory[rpgData.tools.fishing] = 1;
+                    }
+                    if (rpgData.tools.mining && !rpgData.inventory[rpgData.tools.mining]) {
+                        rpgData.inventory[rpgData.tools.mining] = 1;
+                    }
+                    if (rpgData.tools.woodcutting && !rpgData.inventory[rpgData.tools.woodcutting]) {
+                        rpgData.inventory[rpgData.tools.woodcutting] = 1;
+                    }
+                } catch(e) { 
+                    rpgData = {
+                        points: 0,
+                        coins: 300,
+                        inventory: {
+                            cana_comun: 1,
+                            pico_comun: 1,
+                            hacha_comun: 1
+                        },
+                        tools: { fishing: 'cana_comun', mining: 'pico_comun', woodcutting: 'hacha_comun' },
+                        unlockedWorlds: {
+                            fishing: ['playa_serena'],
+                            mining: ['caverna_sombria'],
+                            woodcutting: ['bosque_roble']
+                        },
+                        currentWorld: {
+                            fishing: 'playa_serena',
+                            mining: 'caverna_sombria',
+                            woodcutting: 'bosque_roble'
+                        },
+                        cooldowns: { capture: 0, process: 0 },
+                        lastActions: { capture: 0, process: 0 }
+                    };
+                }
+            }
         }
-
-        // ========== INICIALIZACIÓN ==========
-        loadData();
-        renderInbox();
-        renderCalendar();
-
-        loadReflectionConfig();
-        loadImprovements();
-        renderEnhancedMetrics();
 
         // ========== IMPORT / EXPORT (JSON) ==========
         function exportAll() {
@@ -2261,16 +3452,17 @@
                     },
                     inbox: inbox,
                     scheduledEvents: scheduledEvents,
-                    improvements: loadImprovements(), // returns array and already renders, but here we want data
+                    improvements: loadImprovements(),
                     reflection_cfg: getReflectionConfig(),
-                    reflection_latest: (function(){ const r = localStorage.getItem('gtd_reflection_latest'); return r ? JSON.parse(r) : null })()
+                    reflection_latest: (function(){ const r = localStorage.getItem('gtd_reflection_latest'); return r ? JSON.parse(r) : null })(),
+                    rpgData: rpgData
                 };
 
                 const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `gtd_academico_export_${(new Date()).toISOString().slice(0,19).replace(/[:T]/g,'-')}.json`;
+                a.download = `gtd_rpg_export_${(new Date()).toISOString().slice(0,19).replace(/[:T]/g,'-')}.json`;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
@@ -2295,7 +3487,6 @@
                 } catch (err) {
                     alert('Error leyendo el fichero JSON: ' + err.message);
                 } finally {
-                    // limpiar input para permitir reimportar el mismo fichero si se desea
                     document.getElementById('importFile').value = '';
                 }
             };
@@ -2303,25 +3494,22 @@
         }
 
         function importAll(data) {
-            // validación básica de estructura
             if (!data || typeof data !== 'object') return false;
 
-            // opcional: validar keys mínimas
             if (!('inbox' in data) || !('scheduledEvents' in data)) return false;
 
             try {
-                // Sobreescribir estados en memoria
                 inbox = Array.isArray(data.inbox) ? data.inbox : [];
                 scheduledEvents = Array.isArray(data.scheduledEvents) ? data.scheduledEvents : [];
 
-                // mejoras
-                if (Array.isArray(data.improvements)) {
-                    localStorage.setItem('gtd_improvements', JSON.stringify(data.improvements));
-                } else {
-                    // si no existe, mantener las actuales
+                if (data.rpgData) {
+                    rpgData = data.rpgData;
                 }
 
-                // reflexiones y cfg
+                if (Array.isArray(data.improvements)) {
+                    localStorage.setItem('gtd_improvements', JSON.stringify(data.improvements));
+                }
+
                 if (data.reflection_cfg) {
                     localStorage.setItem('gtd_reflection_cfg', JSON.stringify(data.reflection_cfg));
                 }
@@ -2329,7 +3517,6 @@
                     localStorage.setItem('gtd_reflection_latest', JSON.stringify(data.reflection_latest));
                 }
 
-                // meta: tema y evalPeriod opcional
                 if (data.meta && data.meta.theme) {
                     document.documentElement.setAttribute('data-theme', data.meta.theme);
                 }
@@ -2337,16 +3524,15 @@
                     evalPeriod = data.meta.evalPeriod;
                 }
 
-                // Persistir inbox y eventos con la función existente
                 persistData();
 
-                // Refrescar UI
                 renderInbox();
                 renderProcessArea();
                 renderCalendar();
                 renderEnhancedMetrics();
-                loadImprovements(); // render improvements desde localStorage
+                loadImprovements();
                 updateReflectionStatus();
+                updateRPGDisplay();
 
                 return true;
             } catch (err) {
@@ -2355,14 +3541,30 @@
             }
         }
 
+        // ========== RESETEO DE COOLDOWNS (cada 2 horas) ==========
+        setInterval(() => {
+            const now = Date.now();
+            const cooldownMs = 2 * 60 * 60 * 1000;
+            
+            if (rpgData.lastActions.capture && (now - rpgData.lastActions.capture) >= cooldownMs) {
+                rpgData.cooldowns.capture = 0;
+            }
+            
+            if (rpgData.lastActions.process && (now - rpgData.lastActions.process) >= cooldownMs) {
+                rpgData.cooldowns.process = 0;
+            }
+            
+            persistData();
+        }, 60000); // Check every minute
+
         // ========== INICIALIZACIÓN ==========
         loadData();
         renderInbox();
         renderCalendar();
-
         loadReflectionConfig();
         loadImprovements();
         renderEnhancedMetrics();
+        updateRPGDisplay();
     </script>
 </body>
-</html>
+</html>c
