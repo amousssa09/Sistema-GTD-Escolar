@@ -863,6 +863,23 @@
 
         /* Ajuste: reducir espacio de horas para vista compacta */
         .time-slot { min-height: 48px; }
+
+        /* ====== Estilos para Documentación ====== */
+        .doc-list {
+            margin-top: 8px;
+        }
+        .doc-item {
+            display:flex;
+            gap:10px;
+            align-items:center;
+            background-color: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            padding: 10px;
+            border-radius: 8px;
+            justify-content: space-between;
+        }
+        .doc-meta { color: var(--text-secondary); font-size:0.9rem; }
+        .doc-actions { display:flex; gap:8px; align-items:center; }
     </style>
 </head>
 <body>
@@ -883,6 +900,7 @@
             <button class="tab-btn" onclick="showSection('evaluar')">4. Evaluar</button>
             <button class="tab-btn" onclick="showSection('hacer')">5. Hacer (Hoy)</button>
             <button class="tab-btn" onclick="showSection('configuracion')">⚙️ Configuración</button>
+            <button class="tab-btn" onclick="showSection('documentacion')">📚 Documentación</button>
         </div>
 
         <!-- SECCIÓN 1: RECOPILAR -->
@@ -1085,6 +1103,47 @@
                 </div>
             </div>
         </div>
+
+        <!-- NUEVA SECCIÓN: DOCUMENTACIÓN -->
+        <div id="documentacion" class="section">
+            <div class="card">
+                <h2>📚 Documentación (Apuntes / Planes / Ejercicios)</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                    Sube PDFs y previsualízalos aquí. Los archivos se guardan localmente en tu navegador.
+                </p>
+
+                <div class="doc-controls" style="display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap;">
+                    <div style="display:flex; gap:6px;">
+                        <button class="view-btn active" onclick="switchDocCategory('apuntes', event)">Apuntes</button>
+                        <button class="view-btn" onclick="switchDocCategory('planes', event)">Planes</button>
+                        <button class="view-btn" onclick="switchDocCategory('ejercicios', event)">Ejercicios</button>
+                    </div>
+
+                    <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+                        <input id="docUploadInput" type="file" accept="application/pdf" style="display:none" onchange="handleDocUpload(event)">
+                        <button onclick="document.getElementById('docUploadInput').click()">⬆️ Subir PDF</button>
+                        <span id="docUploadHint" style="color:var(--text-secondary); font-size:0.9rem;">(máx 20MB)</span>
+                    </div>
+                </div>
+
+                <div id="docList" class="doc-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+
+                <div id="docEmptyState" class="empty-state" style="display:none;">No hay documentos en esta categoría.</div>
+
+                <div id="docPreviewContainer" style="margin-top:16px; display:none;">
+                    <h3 id="docPreviewTitle" style="color:var(--accent-primary); margin-bottom:8px;"></h3>
+                    <div style="border:1px solid var(--border-color); border-radius:8px; overflow:hidden;">
+                        <embed id="docPreviewEmbed" type="application/pdf" width="100%" height="600px" />
+                    </div>
+                    <div style="margin-top:8px; display:flex; gap:8px;">
+                        <button onclick="closeDocPreview()">✕ Cerrar vista</button>
+                        <button onclick="downloadCurrentDoc()">⬇️ Descargar</button>
+                        <button class="btn-danger" onclick="deleteCurrentDoc()">🗑️ Borrar</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
     </div>
 
     <!-- MODAL PARA PROCESAR TAREAS -->
@@ -1183,6 +1242,19 @@
         </div>
     </div>
 
+    <!-- MODAL PARA PREVISUALIZAR PDFs (opcional / reutilizable) -->
+    <div id="docPreviewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Previsualizar PDF</h2>
+                <button class="modal-close" onclick="closeModal('docPreviewModal')">✕ Cerrar</button>
+            </div>
+            <div id="docPreviewModalBody" style="min-height:200px;">
+                <embed id="docModalEmbed" type="application/pdf" width="100%" height="600px" />
+            </div>
+        </div>
+    </div>
+
     <script>
         // ========== DATOS GLOBALES ==========
         let inbox = [];
@@ -1192,6 +1264,9 @@
         let currentView = 'day';
         let draggedEvent = null;
         let evalPeriod = 'day'; // 'day' | 'week' | 'month'
+        let docs = [];
+        let currentDocCategory = 'apuntes';
+        let currentPreviewDocId = null;
 
         // ========== TEMA ==========
         function toggleTheme() {
@@ -1212,6 +1287,7 @@
             if (sectionId === 'organizar') renderCalendar();
             if (sectionId === 'evaluar') renderMetrics();
             if (sectionId === 'hacer') renderTodayTasks();
+            if (sectionId === 'documentacion') renderDocs();
         }
 
         // ========== RECOPILAR (FASE 1) ==========
@@ -2219,141 +2295,147 @@
             persistImprovements(list);
         }
 
-        function escapeHtml(s) {
-            return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]));
+        // ========== DOCUMENTOS (NUEVO) ==========
+        function switchDocCategory(cat, ev) {
+            currentDocCategory = cat;
+            document.querySelectorAll('.doc-controls .view-btn').forEach(b => b.classList.remove('active'));
+            if (ev && ev.currentTarget) ev.currentTarget.classList.add('active');
+            renderDocs();
+            // hide inline preview when switching categories
+            closeDocPreview();
         }
 
-        // ========== PERSISTENCIA DE DATOS ==========
-        function persistData() {
-            localStorage.setItem('gtd_inbox', JSON.stringify(inbox));
-            localStorage.setItem('gtd_events', JSON.stringify(scheduledEvents));
-        }
-
-        function loadData() {
-            const rawInbox = localStorage.getItem('gtd_inbox');
-            const rawEvents = localStorage.getItem('gtd_events');
-            
-            if (rawInbox) {
-                try { inbox = JSON.parse(rawInbox); } catch(e) { inbox = []; }
-            }
-            if (rawEvents) {
-                try { scheduledEvents = JSON.parse(rawEvents); } catch(e) { scheduledEvents = []; }
-            }
-        }
-
-        // ========== INICIALIZACIÓN ==========
-        loadData();
-        renderInbox();
-        renderCalendar();
-
-        loadReflectionConfig();
-        loadImprovements();
-        renderEnhancedMetrics();
-
-        // ========== IMPORT / EXPORT (JSON) ==========
-        function exportAll() {
-            try {
-                const payload = {
-                    meta: {
-                        exportedAt: new Date().toISOString(),
-                        theme: document.documentElement.getAttribute('data-theme') || 'light',
-                        evalPeriod: evalPeriod || 'day'
-                    },
-                    inbox: inbox,
-                    scheduledEvents: scheduledEvents,
-                    improvements: loadImprovements(), // returns array and already renders, but here we want data
-                    reflection_cfg: getReflectionConfig(),
-                    reflection_latest: (function(){ const r = localStorage.getItem('gtd_reflection_latest'); return r ? JSON.parse(r) : null })()
-                };
-
-                const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `gtd_academico_export_${(new Date()).toISOString().slice(0,19).replace(/[:T]/g,'-')}.json`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                URL.revokeObjectURL(url);
-            } catch (err) {
-                alert('Error al exportar: ' + (err && err.message ? err.message : err));
-            }
-        }
-
-        function importFileChange(ev) {
+        function handleDocUpload(ev) {
             const file = ev.target.files && ev.target.files[0];
             if (!file) return;
+            if (file.size > 20 * 1024 * 1024) { alert('El fichero excede 20MB.'); ev.target.value=''; return; }
+            if (file.type !== 'application/pdf') { alert('Sólo se admiten PDF.'); ev.target.value=''; return; }
+
             const reader = new FileReader();
             reader.onload = function(e) {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    const ok = confirm('La importación sobrescribirá el estado actual. ¿Continuar?');
-                    if (!ok) return;
-                    const res = importAll(data);
-                    if (res) alert('Importación completada correctamente.');
-                    else alert('El archivo no tiene el formato esperado.');
-                } catch (err) {
-                    alert('Error leyendo el fichero JSON: ' + err.message);
-                } finally {
-                    // limpiar input para permitir reimportar el mismo fichero si se desea
-                    document.getElementById('importFile').value = '';
-                }
+                const dataUrl = e.target.result;
+                const entry = {
+                    id: Date.now() + Math.floor(Math.random()*9999),
+                    filename: file.name,
+                    title: file.name.replace(/\.pdf$/i, ''),
+                    category: currentDocCategory,
+                    dataUrl: dataUrl,
+                    size: file.size,
+                    uploadedAt: new Date().toISOString()
+                };
+                docs.push(entry);
+                persistDocs();
+                renderDocs();
+                document.getElementById('docUploadInput').value = '';
+                alert('Documento subido correctamente.');
             };
-            reader.readAsText(file);
+            reader.readAsDataURL(file);
         }
 
-        function importAll(data) {
-            // validación básica de estructura
-            if (!data || typeof data !== 'object') return false;
-
-            // opcional: validar keys mínimas
-            if (!('inbox' in data) || !('scheduledEvents' in data)) return false;
-
+        function persistDocs() {
             try {
-                // Sobreescribir estados en memoria
-                inbox = Array.isArray(data.inbox) ? data.inbox : [];
-                scheduledEvents = Array.isArray(data.scheduledEvents) ? data.scheduledEvents : [];
-
-                // mejoras
-                if (Array.isArray(data.improvements)) {
-                    localStorage.setItem('gtd_improvements', JSON.stringify(data.improvements));
-                } else {
-                    // si no existe, mantener las actuales
-                }
-
-                // reflexiones y cfg
-                if (data.reflection_cfg) {
-                    localStorage.setItem('gtd_reflection_cfg', JSON.stringify(data.reflection_cfg));
-                }
-                if (data.reflection_latest) {
-                    localStorage.setItem('gtd_reflection_latest', JSON.stringify(data.reflection_latest));
-                }
-
-                // meta: tema y evalPeriod opcional
-                if (data.meta && data.meta.theme) {
-                    document.documentElement.setAttribute('data-theme', data.meta.theme);
-                }
-                if (data.meta && data.meta.evalPeriod) {
-                    evalPeriod = data.meta.evalPeriod;
-                }
-
-                // Persistir inbox y eventos con la función existente
-                persistData();
-
-                // Refrescar UI
-                renderInbox();
-                renderProcessArea();
-                renderCalendar();
-                renderEnhancedMetrics();
-                loadImprovements(); // render improvements desde localStorage
-                updateReflectionStatus();
-
-                return true;
-            } catch (err) {
-                console.error('Import error', err);
-                return false;
+                localStorage.setItem('gtd_docs', JSON.stringify(docs));
+            } catch (e) {
+                console.warn('No se pudo guardar docs en localStorage', e);
             }
         }
+
+        function loadDocs() {
+            const raw = localStorage.getItem('gtd_docs');
+            try { docs = raw ? JSON.parse(raw) : []; } catch(e) { docs = []; }
+        }
+
+        function renderDocs() {
+            const container = document.getElementById('docList');
+            const empty = document.getElementById('docEmptyState');
+            const list = docs.filter(d => d.category === currentDocCategory);
+            container.innerHTML = '';
+            if (list.length === 0) {
+                empty.style.display = 'block';
+                container.style.display = 'none';
+                return;
+            }
+            empty.style.display = 'none';
+            container.style.display = 'flex';
+            list.forEach(d => {
+                const div = document.createElement('div');
+                div.className = 'doc-item';
+                div.innerHTML = `
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <div style="width:40px; text-align:center;">📄</div>
+                        <div>
+                            <div style="font-weight:600;">${escapeHtml(d.title)}</div>
+                            <div class="doc-meta">${new Date(d.uploadedAt).toLocaleString()} • ${(d.size/1024).toFixed(1)} KB</div>
+                        </div>
+                    </div>
+                    <div class="doc-actions">
+                        <button onclick="previewDoc(${d.id})">🔍 Ver</button>
+                        <button onclick="downloadDoc(${d.id})">⬇️</button>
+                        <button class="btn-danger" onclick="deleteDoc(${d.id})">🗑️</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function previewDoc(id) {
+            const d = docs.find(x => x.id === id);
+            if (!d) return;
+            currentPreviewDocId = id;
+            // show inline preview area
+            const previewContainer = document.getElementById('docPreviewContainer');
+            document.getElementById('docPreviewTitle').textContent = d.filename;
+            document.getElementById('docPreviewEmbed').setAttribute('src', d.dataUrl);
+            previewContainer.style.display = 'block';
+            // scroll into view
+            previewContainer.scrollIntoView({behavior:'smooth', block:'center'});
+        }
+
+        function closeDocPreview() {
+            const previewContainer = document.getElementById('docPreviewContainer');
+            previewContainer.style.display = 'none';
+            document.getElementById('docPreviewEmbed').setAttribute('src', '');
+            currentPreviewDocId = null;
+        }
+
+        function downloadDoc(id) {
+            const d = docs.find(x => x.id === id);
+            if (!d) return;
+            const a = document.createElement('a');
+            a.href = d.dataUrl;
+            a.download = d.filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        }
+
+        function downloadCurrentDoc() {
+            if (!currentPreviewDocId) return;
+            downloadDoc(currentPreviewDocId);
+        }
+
+        function deleteDoc(id) {
+            if (!confirm('¿Eliminar este documento permanentemente?')) return;
+            docs = docs.filter(d => d.id !== id);
+            persistDocs();
+            renderDocs();
+            if (currentPreviewDocId === id) closeDocPreview();
+        }
+
+        function deleteCurrentDoc() {
+            if (!currentPreviewDocId) return;
+            deleteDoc(currentPreviewDocId);
+        }
+
+        // Utilidad: escapar texto (ya existe arriba, si no, la definimos localmente)
+        function escapeHtml(s) {
+            if (!s) return '';
+            return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]));
+        }
+
+        // ========== INICIALIZACIÓN DOCUMENTOS ==========
+        loadDocs();
+        renderDocs();
 
         // ========== INICIALIZACIÓN ==========
         loadData();
