@@ -1140,6 +1140,13 @@
                 <div style="margin-top:12px; color:var(--text-secondary); font-size:0.95rem;">
                     <p><strong>Nota:</strong> La importación sobrescribirá el estado actual. Asegúrate de guardar antes si lo necesitas.</p>
                 </div>
+
+                <!-- NUEVO: LISTADO DE AUTOMATIZACIONES -->
+                <div style="margin-top:24px;">
+                    <h3>🔄 Automatizaciones</h3>
+                    <div id="automationList" style="display:flex; flex-direction:column; gap:10px;"></div>
+                    <div id="automationEmptyState" class="empty-state" style="display:none;">No hay automatizaciones configuradas.</div>
+                </div>
             </div>
         </div>
 
@@ -1322,6 +1329,56 @@
         </div>
     </div>
 
+    <!-- MODAL PARA CONFIGURAR AUTOMATIZACIÓN -->
+    <div id="automationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Configurar Automatización</h2>
+                <button class="modal-close" onclick="closeModal('automationModal')">✕ Cerrar</button>
+            </div>
+
+            <div class="form-group">
+                <label>Elemento</label>
+                <div id="automationTarget" style="font-weight:600; margin-bottom:8px;"></div>
+            </div>
+
+            <div class="form-group">
+                <label>Tipo</label>
+                <select id="automationType">
+                    <option value="tarea">Tarea</option>
+                    <option value="habit">Hábito</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Fecha de inicio</label>
+                <input type="date" id="automationStartDate">
+            </div>
+
+            <div class="form-group">
+                <label>Hora de inicio (opcional)</label>
+                <input type="time" id="automationTimeStart">
+            </div>
+
+            <div class="form-group">
+                <label>Duración (minutos)</label>
+                <input type="number" id="automationDuration" min="0" value="30">
+            </div>
+
+            <div class="form-group">
+                <label>Días a repetir</label>
+                <input type="number" id="automationDays" min="1" value="7">
+            </div>
+
+            <div style="display:flex; gap:8px; margin-top:12px;">
+                <button onclick="saveAutomation()">💾 Guardar automatización</button>
+                <button class="btn-danger" onclick="closeModal('automationModal')">Cancelar</button>
+            </div>
+
+            <div id="automationPreview" style="margin-top:12px; color:var(--text-secondary); font-size:0.95rem;"></div>
+        </div>
+    </div>
+
     <script>
         // ========== DATOS GLOBALES ==========
         let inbox = [];
@@ -1335,6 +1392,9 @@
         let currentDocCategory = 'apuntes';
         let currentPreviewDocId = null;
         let currentMode = 'escolar'; // 'escolar' o 'personal'
+
+        // Añadir array de automatizaciones
+        let automations = [];
 
         // ========== MODO (ESCOLAR/PERSONAL) ==========
         function switchMode(mode) {
@@ -1425,9 +1485,12 @@
                             ${item.mode === 'personal' ? '👤' : '🎓'}
                         </span>
                     </div>
-                    <button class="btn-small btn-danger" onclick="deleteInboxItem(${item.id})">
-                        🗑️ Eliminar
-                    </button>
+                    <div style="display:flex; gap:6px; align-items:center;">
+                        <button class="btn-small" title="Configurar automatización" onclick="openAutomationForInbox(${item.id})">⚙️</button>
+                        <button class="btn-small btn-danger" onclick="deleteInboxItem(${item.id})">
+                            🗑️ Eliminar
+                        </button>
+                    </div>
                 </div>
             `).join('');
         }
@@ -1512,6 +1575,207 @@
                 renderProcessArea();
                 persistData();
             }
+        }
+
+        /* ========== AUTOMATIZACIONES (NUEVO) ========== */
+        // Modal HTML: insertar en el DOM: (agregar cerca de otros modales en el HTML)
+        // ...existing code...
+    </script>
+
+    <!-- Agregar modal justo antes de <script> si lo prefieres; lo insertamos aquí -->
+    <div id="automationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Configurar Automatización</h2>
+                <button class="modal-close" onclick="closeModal('automationModal')">✕ Cerrar</button>
+            </div>
+
+            <div class="form-group">
+                <label>Elemento</label>
+                <div id="automationTarget" style="font-weight:600; margin-bottom:8px;"></div>
+            </div>
+
+            <div class="form-group">
+                <label>Tipo</label>
+                <select id="automationType">
+                    <option value="tarea">Tarea</option>
+                    <option value="habit">Hábito</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Fecha de inicio</label>
+                <input type="date" id="automationStartDate">
+            </div>
+
+            <div class="form-group">
+                <label>Hora de inicio (opcional)</label>
+                <input type="time" id="automationTimeStart">
+            </div>
+
+            <div class="form-group">
+                <label>Duración (minutos)</label>
+                <input type="number" id="automationDuration" min="0" value="30">
+            </div>
+
+            <div class="form-group">
+                <label>Días a repetir</label>
+                <input type="number" id="automationDays" min="1" value="7">
+            </div>
+
+            <div style="display:flex; gap:8px; margin-top:12px;">
+                <button onclick="saveAutomation()">💾 Guardar automatización</button>
+                <button class="btn-danger" onclick="closeModal('automationModal')">Cancelar</button>
+            </div>
+
+            <div id="automationPreview" style="margin-top:12px; color:var(--text-secondary); font-size:0.95rem;"></div>
+        </div>
+    </div>
+
+    <script>
+        // ...existing code...
+
+        let currentAutomationInboxId = null;
+
+        function openAutomationForInbox(inboxId) {
+            const item = inbox.find(i => i.id === inboxId);
+            if (!item) return;
+            currentAutomationInboxId = inboxId;
+            document.getElementById('automationTarget').textContent = item.text;
+            // Defaults
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('automationStartDate').value = today;
+            document.getElementById('automationTimeStart').value = '';
+            document.getElementById('automationDuration').value = 30;
+            document.getElementById('automationDays').value = 7;
+            document.getElementById('automationType').value = (item.mode === 'personal' ? 'habit' : 'tarea');
+            updateAutomationPreview();
+            document.getElementById('automationModal').classList.add('active');
+
+            // update preview on change
+            ['automationType','automationStartDate','automationTimeStart','automationDuration','automationDays'].forEach(id => {
+                const el = document.getElementById(id);
+                el.oninput = updateAutomationPreview;
+            });
+        }
+
+        function updateAutomationPreview() {
+            const t = document.getElementById('automationType').value;
+            const d0 = document.getElementById('automationStartDate').value;
+            const time = document.getElementById('automationTimeStart').value;
+            const dur = document.getElementById('automationDuration').value;
+            const days = document.getElementById('automationDays').value;
+            const preview = document.getElementById('automationPreview');
+            preview.innerHTML = `Se crearán <strong>${days}</strong> eventos de tipo <strong>${t}</strong> empezando el <strong>${d0}</strong>${time ? ' a las '+time : ' (sin hora especificada)'} con duración ${dur} min cada uno.`;
+        }
+
+        function saveAutomation() {
+            if (!currentAutomationInboxId) return alert('No hay elemento seleccionado.');
+            const inboxItem = inbox.find(i => i.id === currentAutomationInboxId);
+            if (!inboxItem) return alert('Elemento no localizado.');
+
+            const type = document.getElementById('automationType').value;
+            const startDate = document.getElementById('automationStartDate').value;
+            const timeStart = document.getElementById('automationTimeStart').value || null;
+            const duration = parseInt(document.getElementById('automationDuration').value, 10) || 0;
+            const days = parseInt(document.getElementById('automationDays').value, 10) || 1;
+
+            if (!startDate) return alert('Selecciona una fecha de inicio.');
+            if (duration < 0 || days < 1) return alert('Valores inválidos.');
+
+            const automation = {
+                id: Date.now() + Math.floor(Math.random()*9999),
+                inboxId: currentAutomationInboxId,
+                title: inboxItem.text,
+                type, // 'tarea' | 'habit'
+                startDate,
+                timeStart, // can be null
+                duration,
+                days,
+                mode: inboxItem.mode,
+                createdAt: new Date().toISOString()
+            };
+
+            automations.push(automation);
+
+            // marcar el inbox como procesado ya que lo hemos automatizado
+            inboxItem.processed = true;
+
+            persistData();
+            applyAutomation(automation);
+            renderInbox();
+            renderProcessArea();
+            renderAutomations();
+            renderCalendar();
+            renderTodayTasks();
+            renderEnhancedMetrics();
+
+            closeModal('automationModal');
+            alert('✅ Automatización creada y eventos programados.');
+        }
+
+        function applyAutomation(automation) {
+            const start = new Date(automation.startDate);
+            for (let i = 0; i < automation.days; i++) {
+                const d = new Date(start);
+                d.setDate(start.getDate() + i);
+                const dateStr = d.toISOString().split('T')[0];
+
+                const newEvent = {
+                    id: Date.now() + Math.floor(Math.random()*100000) + i,
+                    title: `${automation.type === 'habit' ? '🔄 ' : '📝 '}${automation.title}`,
+                    type: automation.type === 'habit' ? 'habit' : (automation.mode === 'personal' ? 'tarea-personal' : 'tarea'),
+                    date: dateStr,
+                    timeStart: automation.timeStart,
+                    timeEnd: automation.timeStart ? addMinutesToTime(automation.timeStart, automation.duration) : null,
+                    completed: false,
+                    mode: automation.mode,
+                    automationId: automation.id,
+                    createdByAutomation: true
+                };
+
+                scheduledEvents.push(newEvent);
+            }
+            persistData();
+        }
+
+        function renderAutomations() {
+            const containerId = 'automationList';
+            let container = document.getElementById(containerId);
+            if (!container) return;
+            if (automations.length === 0) {
+                container.innerHTML = '<div class="empty-state">No hay automatizaciones configuradas.</div>';
+                return;
+            }
+
+            container.innerHTML = automations.map(a => {
+                return `
+                    <div class="card" style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                        <div style="flex:1;">
+                            <div style="font-weight:600;">${escapeHtml(a.title)} <small style="color:var(--text-secondary)">(${a.type})</small></div>
+                            <div style="color:var(--text-secondary); font-size:0.95rem;">
+                                Inicio: ${a.startDate} ${a.timeStart ? '• ' + a.timeStart : ''} • ${a.days} días • Duración ${a.duration}min
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button onclick="applyAutomation(automations.find(x=>x.id===${a.id}))">🔁 Reaplicar</button>
+                            <button class="btn-danger" onclick="removeAutomation(${a.id})">🗑️ Eliminar</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function removeAutomation(id) {
+            if (!confirm('Eliminar automatización y todos los eventos creados por ella?')) return;
+            automations = automations.filter(a => a.id !== id);
+            // eliminar eventos generados por esta automatización
+            scheduledEvents = scheduledEvents.filter(e => e.automationId !== id);
+            persistData();
+            renderAutomations();
+            renderCalendar();
+            renderTodayTasks();
+            renderEnhancedMetrics();
         }
 
         // ========== MODALES ==========
@@ -1839,6 +2103,7 @@
                 
                 if (name && minutes > 0) {
                     steps.push({ name, minutes, index: i+1 });
+
                 }
             }
             
@@ -2397,7 +2662,7 @@
         function getReflectionConfig() {
             const raw = localStorage.getItem('gtd_reflection_cfg');
             if (!raw) return { reviewDay: 1 };
-            try { return JSON.parse(raw); } catch(e){ return { reviewDay:1 }; }
+            try { return JSON.parse(raw); } catch(e) { return { reviewDay:1 }; }
         }
 
         function saveReflection() {
@@ -2687,6 +2952,7 @@
                 inbox: inbox,
                 scheduledEvents: scheduledEvents,
                 docs: docs,
+                automations: automations,
                 improvements: (() => {
                     const raw = localStorage.getItem('gtd_improvements');
                     return raw ? JSON.parse(raw) : [];
@@ -2703,6 +2969,7 @@
                     inbox = data.inbox || [];
                     scheduledEvents = data.scheduledEvents || [];
                     docs = data.docs || [];
+                    automations = data.automations || [];
                 } catch(e) {
                     console.warn('Error cargando datos', e);
                 }
@@ -2717,6 +2984,7 @@
                 inbox: inbox,
                 scheduledEvents: scheduledEvents,
                 docs: docs,
+                automations: automations,
                 improvements: (() => {
                     const raw = localStorage.getItem('gtd_improvements');
                     return raw ? JSON.parse(raw) : [];
@@ -2755,6 +3023,7 @@
                     inbox = importedData.inbox || [];
                     scheduledEvents = importedData.scheduledEvents || [];
                     docs = importedData.docs || [];
+                    automations = importedData.automations || [];
 
                     if (importedData.improvements) {
                         localStorage.setItem('gtd_improvements', JSON.stringify(importedData.improvements));
@@ -2776,6 +3045,7 @@
                     renderEnhancedMetrics();
                     renderTodayTasks();
                     renderDocs();
+                    renderAutomations();
 
                     alert('✅ Datos importados correctamente. Recargando...');
                     event.target.value = '';
@@ -2788,13 +3058,14 @@
             reader.readAsText(file);
         }
 
-        // ========== INICIALIZACIÓN ==========
+        // Inicialización: asegurar que se renderizan automatizaciones
         loadData();
         renderInbox();
         renderCalendar();
         loadReflectionConfig();
         loadImprovements();
         renderEnhancedMetrics();
+        renderAutomations();
     </script>
 </body>
 </html>
