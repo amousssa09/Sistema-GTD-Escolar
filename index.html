@@ -3072,6 +3072,173 @@
         loadImprovements();
         renderEnhancedMetrics();
         renderAutomations();
+
+// ====== Funciones añadidas: procesamiento de elementos faltantes ======
+function processAsTarea() {
+	// Abre modal de tarea para finalizar el procesamiento desde la fase 2
+	openModal('taskModal');
+	// Asegurar que el formulario de agendado está oculto al abrir
+	document.getElementById('scheduleTaskForm').style.display = 'none';
+}
+
+function processAsHabit() {
+	// Abre modal de hábito
+	openModal('habitModal');
+	document.getElementById('scheduleHabitForm').style.display = 'none';
+	document.getElementById('habitDateForm').style.display = 'none';
+}
+
+function processAsExamen() {
+	// Abre modal de examen
+	openModal('examModal');
+	// limpiar lista de topics si fuera necesario (opcional)
+	// document.getElementById('examTopicsList').innerHTML = '';
+}
+
+function processAsProyecto() {
+	// Abre modal de proyecto (escolar)
+	openModal('projectModal');
+	// document.getElementById('projectStepsList').innerHTML = '';
+}
+
+function discardItem() {
+	// Marcar el elemento actual como procesado (descartar)
+	if (!currentProcessingItem) return;
+	if (!confirm('¿Seguro que deseas descartar este elemento?')) return;
+	currentProcessingItem.processed = true;
+	renderInbox();
+	renderProcessArea();
+	persistData();
+	alert('Elemento descartado');
+}
+
+// ====== Automatizaciones: abrir, guardar, listar, ejecutar, eliminar ======
+let automationTargetInboxId = null;
+
+function openAutomationForInbox(inboxId) {
+	const item = inbox.find(i => i.id === inboxId);
+	if (!item) return;
+	automationTargetInboxId = inboxId;
+	document.getElementById('automationTarget').textContent = item.text;
+	// Prefill sensible defaults
+	document.getElementById('automationStartDate').value = new Date().toISOString().split('T')[0];
+	document.getElementById('automationTimeStart').value = '';
+	document.getElementById('automationDuration').value = 30;
+	document.getElementById('automationDays').value = 7;
+	document.getElementById('automationType').value = item.mode === 'personal' ? 'habit' : 'tarea';
+	openModal('automationModal');
+	updateAutomationPreview();
+}
+
+function updateAutomationPreview() {
+	const t = document.getElementById('automationType').value;
+	const sd = document.getElementById('automationStartDate').value;
+	const ts = document.getElementById('automationTimeStart').value;
+	const days = document.getElementById('automationDays').value;
+	const preview = document.getElementById('automationPreview');
+	if (!preview) return;
+	preview.textContent = `Tipo: ${t} • Inicio: ${sd}${ts ? ' • ' + ts : ''} • Repite cada ${days} días`;
+}
+
+function saveAutomation() {
+	const type = document.getElementById('automationType').value;
+	const startDate = document.getElementById('automationStartDate').value;
+	const timeStart = document.getElementById('automationTimeStart').value;
+	const duration = parseInt(document.getElementById('automationDuration').value, 10) || 30;
+	const days = parseInt(document.getElementById('automationDays').value, 10) || 7;
+
+	if (!startDate) { alert('Indica la fecha de inicio'); return; }
+
+	const targetItem = inbox.find(i => i.id === automationTargetInboxId);
+	const entry = {
+		id: Date.now(),
+		targetInboxId: automationTargetInboxId,
+		targetText: targetItem ? targetItem.text : document.getElementById('automationTarget').textContent,
+		type, startDate, timeStart: timeStart || null, duration, days,
+		createdAt: new Date().toISOString()
+	};
+
+	automations.push(entry);
+	persistData();
+	renderAutomations();
+	closeModal('automationModal');
+	alert('Automatización guardada');
+}
+
+function renderAutomations() {
+	const container = document.getElementById('automationList');
+	const empty = document.getElementById('automationEmptyState');
+	if (!container) return;
+	container.innerHTML = '';
+	if (!automations || automations.length === 0) {
+		empty.style.display = 'block';
+		return;
+	}
+	empty.style.display = 'none';
+	automations.forEach(a => {
+		const div = document.createElement('div');
+		div.className = 'card';
+		div.style.display = 'flex';
+		div.style.justifyContent = 'space-between';
+		div.style.alignItems = 'center';
+		div.innerHTML = `
+			<div>
+				<strong>${escapeHtml(a.targetText)}</strong>
+				<div style="color:var(--text-secondary); font-size:0.9rem;">
+					${a.type} • ${a.startDate}${a.timeStart ? ' • '+a.timeStart : ''} • cada ${a.days} días
+				</div>
+			</div>
+			<div style="display:flex; gap:8px;">
+				<button onclick="runAutomationNow(${a.id})">▶️ Ejecutar</button>
+				<button class="btn-danger" onclick="deleteAutomation(${a.id})">🗑️</button>
+			</div>
+		`;
+		container.appendChild(div);
+	});
+}
+
+function deleteAutomation(id) {
+	if (!confirm('¿Eliminar esta automatización?')) return;
+	automations = automations.filter(a => a.id !== id);
+	persistData();
+	renderAutomations();
+}
+
+function runAutomationNow(id) {
+	const a = automations.find(x => x.id === id);
+	if (!a) return;
+	const date = a.startDate;
+	let timeStart = a.timeStart;
+	let timeEnd = null;
+	if (timeStart) {
+		timeEnd = addMinutesToTime(timeStart, a.duration);
+	}
+	const evType = a.type === 'habit' ? 'habit' : (a.type === 'tarea' ? 'tarea' : 'tarea');
+	const mode = a.type === 'habit' ? 'personal' : 'escolar';
+	scheduledEvents.push({
+		id: Date.now(),
+		title: a.targetText,
+		type: evType,
+		date: date,
+		timeStart: timeStart || null,
+		timeEnd: timeEnd,
+		duration: a.duration,
+		completed: false,
+		mode: mode
+	});
+	persistData();
+	renderCalendar();
+	renderTodayTasks();
+	renderEnhancedMetrics();
+	alert('Automatización ejecutada: evento creado en el calendario.');
+}
+
+// Asegurar que la vista previa se actualiza si el usuario cambia algo en el modal
+document.addEventListener('change', function(e){
+	if (e.target && (e.target.id === 'automationType' || e.target.id === 'automationStartDate' || e.target.id === 'automationTimeStart' || e.target.id === 'automationDays')) {
+		updateAutomationPreview();
+	}
+});
     </script>
 </body>
 </html>
