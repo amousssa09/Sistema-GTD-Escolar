@@ -450,6 +450,16 @@
             background-color: #9b59b6;
         }
 
+        .event-block.bloque {
+            background-color: #34495e;
+            cursor: default;
+        }
+
+        .event-block.bloque:hover {
+            opacity: 0.8;
+            box-shadow: 0 0 8px var(--shadow);
+        }
+
         /* Vista Semanal */
         .week-view {
             display: none;
@@ -1412,6 +1422,39 @@
         </div>
     </div>
 
+    <!-- MODAL PARA EDITAR BLOQUES DE TIEMPO LIBRE -->
+    <div id="timeBlockModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Editar Bloque de Tiempo</h2>
+                <button class="modal-close" onclick="closeModal('timeBlockModal')">✕ Cerrar</button>
+            </div>
+            
+            <div class="form-group">
+                <label>Nombre del bloque</label>
+                <input type="text" id="tbName" placeholder="ej. Descanso, Almuerzo...">
+            </div>
+            
+            <div class="form-group">
+                <label>Hora de inicio</label>
+                <input type="time" id="tbTimeStart">
+            </div>
+            
+            <div class="form-group">
+                <label>Hora de fin</label>
+                <input type="time" id="tbTimeEnd">
+            </div>
+            
+            <input type="hidden" id="tbBlockId">
+            
+            <div style="display:flex; gap:8px; margin-top:16px;">
+                <button onclick="saveTimeBlock()" style="flex:1;">💾 Guardar</button>
+                <button class="btn-danger" onclick="deleteTimeBlock()" style="flex:1;">🗑️ Eliminar</button>
+                <button onclick="closeModal('timeBlockModal')" style="flex:1;">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ========== DATOS GLOBALES ==========
         let inbox = [];
@@ -1431,6 +1474,9 @@
 
         // Añadir array de proyectos (personales)
         let projects = [];
+
+        // NUEVO: Bloques de tiempo libre
+        let timeBlocks = [];
 
         // ========== MODO (ESCOLAR/PERSONAL) ==========
         function switchMode(mode) {
@@ -2211,6 +2257,7 @@
             const container = document.getElementById('dayTimeSlots');
             const dateStr = currentDate.toISOString().split('T')[0];
             const dayEvents = scheduledEvents.filter(e => e.date === dateStr);
+            const dayBlocks = timeBlocks.filter(b => b.date === dateStr);
             
             let html = '';
             for (let hour = 0; hour <= 23; hour++) {
@@ -2221,10 +2268,15 @@
                     return eventHour === hour;
                 });
                 
+                const blocksInSlot = dayBlocks.filter(b => {
+                    const blockHour = parseInt(b.timeStart.split(':')[0], 10);
+                    return b.date === dateStr && blockHour === hour;
+                });
+                
                 html += `
                     <div class="time-slot" data-time="${timeStr}">
                         <div class="time-label">${timeStr}</div>
-                        <div class="time-content" ondrop="drop(event)" ondragover="allowDrop(event)" data-date="${dateStr}" data-time="${timeStr}">
+                        <div class="time-content" ondrop="drop(event)" ondragover="allowDrop(event)" data-date="${dateStr}" data-time="${timeStr}" ondblclick="createTimeBlockAtTime('${dateStr}', '${timeStr}')">
                             ${eventsInSlot.map(e => {
                                 const minutes = calculateDuration(e.timeStart, e.timeEnd);
                                 const heightPercent = (minutes / 60) * 100;
@@ -2232,6 +2284,16 @@
                                     <div class="event-block ${e.type}" draggable="true" ondragstart="drag(event)" onclick="editEventTimePeriod(event, ${e.id})" data-id="${e.id}" style="height: ${heightPercent}%; min-height: auto; display: flex; flex-direction: column; justify-content: center;">
                                         <strong>${e.title}</strong>
                                         <small>${e.timeStart} - ${e.timeEnd}</small>
+                                    </div>
+                                `;
+                            }).join('')}
+                            ${blocksInSlot.map(b => {
+                                const minutes = calculateDuration(b.timeStart, b.timeEnd);
+                                const heightPercent = (minutes / 60) * 100;
+                                return `
+                                    <div class="event-block bloque" onclick="editTimeBlock(event, ${b.id})" data-id="${b.id}" style="height: ${heightPercent}%; min-height: auto; display: flex; flex-direction: column; justify-content: center; cursor: pointer;">
+                                        <strong>${escapeHtml(b.name)}</strong>
+                                        <small>${b.timeStart} - ${b.timeEnd}</small>
                                     </div>
                                 `;
                             }).join('')}
@@ -2270,6 +2332,11 @@
                         const eventHour = parseInt(e.timeStart.split(':')[0], 10);
                         return e.date === dateStr && eventHour === hour;
                     });
+
+                    const blocksInSlot = timeBlocks.filter(b => {
+                        const blockHour = parseInt(b.timeStart.split(':')[0], 10);
+                        return b.date === dateStr && blockHour === hour;
+                    });
                     
                     html += `
                         <div class="week-cell" ondrop="drop(event)" ondragover="allowDrop(event)" data-date="${dateStr}" data-time="${timeStr}">
@@ -2279,6 +2346,15 @@
                                 return `
                                     <div class="event-block ${e.type}" draggable="true" ondragstart="drag(event)" onclick="editEventTimePeriod(event, ${e.id})" data-id="${e.id}" style="font-size: 0.75rem; height: ${heightPercent}%; min-height: auto; display: flex; flex-direction: column; justify-content: center;">
                                         ${e.title.substring(0, 20)}...
+                                    </div>
+                                `;
+                            }).join('')}
+                            ${blocksInSlot.map(b => {
+                                const minutes = calculateDuration(b.timeStart, b.timeEnd);
+                                const heightPercent = (minutes / 60) * 100;
+                                return `
+                                    <div class="event-block bloque" onclick="editTimeBlock(event, ${b.id})" data-id="${b.id}" style="font-size: 0.75rem; height: ${heightPercent}%; min-height: auto; display: flex; flex-direction: column; justify-content: center; cursor: pointer;">
+                                        ${b.name.substring(0, 20)}...
                                     </div>
                                 `;
                             }).join('')}
@@ -2309,6 +2385,7 @@
                 const date = new Date(year, month, day);
                 const dateStr = date.toISOString().split('T')[0];
                 const dayEvents = scheduledEvents.filter(e => e.date === dateStr);
+                const dayBlocks = timeBlocks.filter(b => b.date === dateStr);
                 
                 html += `
                     <div class="month-day">
@@ -2316,6 +2393,11 @@
                         ${dayEvents.map(e => `
                             <div class="month-event ${e.type}" onclick="editEventTimePeriod(event, ${e.id})" style="cursor:pointer;">
                                 ${e.title.substring(0, 15)}...
+                            </div>
+                        `).join('')}
+                        ${dayBlocks.map(b => `
+                            <div class="month-event bloque" onclick="editTimeBlock(event, ${b.id})" style="cursor:pointer;">
+                                ${escapeHtml(b.name).substring(0, 15)}...
                             </div>
                         `).join('')}
                     </div>
@@ -2959,7 +3041,8 @@
                     const raw = localStorage.getItem('gtd_improvements');
                     return raw ? JSON.parse(raw) : [];
                 })(),
-                projects: projects
+                projects: projects,
+                timeBlocks: timeBlocks
             };
             localStorage.setItem('gtd_data', JSON.stringify(data));
         }
@@ -2974,6 +3057,7 @@
                     docs = data.docs || [];
                     automations = data.automations || [];
                     projects = data.projects || [];
+                    timeBlocks = data.timeBlocks || [];
                 } catch(e) {
                     console.warn('Error cargando datos', e);
                 }
@@ -3002,6 +3086,7 @@
                     return raw ? JSON.parse(raw) : null;
                 })(),
                 projects: projects,
+                timeBlocks: timeBlocks,
                 exportDate: new Date().toISOString()
             };
 
@@ -3030,6 +3115,7 @@
                     docs = importedData.docs || [];
                     automations = importedData.automations || [];
                     projects = importedData.projects || [];
+                    timeBlocks = importedData.timeBlocks || [];
 
                     if (importedData.improvements) {
                         localStorage.setItem('gtd_improvements', JSON.stringify(importedData.improvements));
@@ -3239,6 +3325,126 @@ document.addEventListener('change', function(e){
 		updateAutomationPreview();
 	}
 });
+
+// ====== BLOQUES DE TIEMPO LIBRE (NUEVO) ======
+function createTimeBlockAtTime(dateStr, timeStr) {
+	const name = prompt('Nombre del bloque (ej. Descanso, Almuerzo)', 'Bloque de tiempo');
+	if (!name) return;
+	const start = prompt('Hora de inicio (HH:MM)', timeStr);
+	if (!start) return;
+	const end = prompt('Hora de fin (HH:MM)', addMinutesToTime(start, 60));
+	if (!end) return;
+	
+	const block = {
+		id: Date.now() + Math.floor(Math.random()*9999),
+		date: dateStr,
+		name: name.trim(),
+		timeStart: start,
+		timeEnd: end,
+		createdAt: new Date().toISOString()
+	};
+	
+	timeBlocks.push(block);
+	persistData();
+	renderCalendar();
+	alert('✅ Bloque de tiempo creado');
+}
+
+function editTimeBlock(e, blockId) {
+	e.stopPropagation();
+	const block = timeBlocks.find(b => b.id === blockId);
+	if (!block) return;
+	
+	openTimeBlockModal(block);
+}
+
+function openTimeBlockModal(block) {
+	const modal = document.getElementById('timeBlockModal');
+	if (!modal) {
+		// Create modal if it doesn't exist
+		createTimeBlockModal();
+		openTimeBlockModal(block);
+		return;
+	}
+	
+	document.getElementById('tbName').value = block.name;
+	document.getElementById('tbTimeStart').value = block.timeStart;
+	document.getElementById('tbTimeEnd').value = block.timeEnd;
+	document.getElementById('tbBlockId').value = block.id;
+	
+	modal.classList.add('active');
+}
+
+function createTimeBlockModal() {
+	const modal = document.createElement('div');
+	modal.id = 'timeBlockModal';
+	modal.className = 'modal';
+	modal.innerHTML = `
+		<div class="modal-content">
+			<div class="modal-header">
+				<h2>Editar Bloque de Tiempo</h2>
+				<button class="modal-close" onclick="closeModal('timeBlockModal')">✕ Cerrar</button>
+			</div>
+			
+			<div class="form-group">
+				<label>Nombre del bloque</label>
+				<input type="text" id="tbName" placeholder="ej. Descanso, Almuerzo...">
+			</div>
+			
+			<div class="form-group">
+				<label>Hora de inicio</label>
+				<input type="time" id="tbTimeStart">
+			</div>
+			
+			<div class="form-group">
+				<label>Hora de fin</label>
+				<input type="time" id="tbTimeEnd">
+			</div>
+			
+			<input type="hidden" id="tbBlockId">
+			
+			<div style="display:flex; gap:8px; margin-top:16px;">
+				<button onclick="saveTimeBlock()" style="flex:1;">💾 Guardar</button>
+				<button class="btn-danger" onclick="deleteTimeBlock()" style="flex:1;">🗑️ Eliminar</button>
+				<button onclick="closeModal('timeBlockModal')" style="flex:1;">Cancelar</button>
+			</div>
+		</div>
+	`;
+	document.body.appendChild(modal);
+}
+
+function saveTimeBlock() {
+	const blockId = parseInt(document.getElementById('tbBlockId').value, 10);
+	const name = document.getElementById('tbName').value.trim();
+	const timeStart = document.getElementById('tbTimeStart').value;
+	const timeEnd = document.getElementById('tbTimeEnd').value;
+	
+	if (!name || !timeStart || !timeEnd) {
+		alert('⚠️ Completa todos los campos');
+		return;
+	}
+	
+	const block = timeBlocks.find(b => b.id === blockId);
+	if (block) {
+		block.name = name;
+		block.timeStart = timeStart;
+		block.timeEnd = timeEnd;
+		persistData();
+		renderCalendar();
+		closeModal('timeBlockModal');
+		alert('✅ Bloque actualizado');
+	}
+}
+
+function deleteTimeBlock() {
+	if (!confirm('¿Eliminar este bloque de tiempo?')) return;
+	const blockId = parseInt(document.getElementById('tbBlockId').value, 10);
+	timeBlocks = timeBlocks.filter(b => b.id !== blockId);
+	persistData();
+	renderCalendar();
+	closeModal('timeBlockModal');
+	alert('🗑️ Bloque eliminado');
+}
     </script>
 </body>
 </html>
