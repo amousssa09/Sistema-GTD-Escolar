@@ -450,16 +450,6 @@
             background-color: #9b59b6;
         }
 
-        .event-block.bloque {
-            background-color: #34495e;
-            cursor: default;
-        }
-
-        .event-block.bloque:hover {
-            opacity: 0.8;
-            box-shadow: 0 0 8px var(--shadow);
-        }
-
         /* Vista Semanal */
         .week-view {
             display: none;
@@ -925,6 +915,60 @@
         }
         .doc-meta { color: var(--text-secondary); font-size:0.9rem; }
         .doc-actions { display:flex; gap:8px; align-items:center; }
+
+        /* ========== MODAL AUTOMATIZACIÓN ========== */
+        .automation-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .automation-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .weekdays-selector {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .weekday-btn {
+            padding: 10px 8px;
+            border: 2px solid var(--border-color);
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .weekday-btn:hover {
+            border-color: var(--accent-primary);
+        }
+
+        .weekday-btn.selected {
+            background-color: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+        }
+
+        .automation-preview {
+            padding: 12px;
+            background-color: rgba(52, 152, 219, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            max-height: 150px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body>
@@ -1150,13 +1194,6 @@
                 <div style="margin-top:12px; color:var(--text-secondary); font-size:0.95rem;">
                     <p><strong>Nota:</strong> La importación sobrescribirá el estado actual. Asegúrate de guardar antes si lo necesitas.</p>
                 </div>
-
-                <!-- NUEVO: LISTADO DE AUTOMATIZACIONES -->
-                <div style="margin-top:24px;">
-                    <h3>🔄 Automatizaciones</h3>
-                    <div id="automationList" style="display:flex; flex-direction:column; gap:10px;"></div>
-                    <div id="automationEmptyState" class="empty-state" style="display:none;">No hay automatizaciones configuradas.</div>
-                </div>
             </div>
         </div>
 
@@ -1339,119 +1376,90 @@
         </div>
     </div>
 
-    <!-- MODAL PARA CONFIGURAR AUTOMATIZACIÓN -->
+    <!-- MODAL PARA AUTOMATIZACIÓN -->
     <div id="automationModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Configurar Automatización</h2>
+                <h2>⚙️ Automatizar Elemento</h2>
                 <button class="modal-close" onclick="closeModal('automationModal')">✕ Cerrar</button>
             </div>
 
             <div class="form-group">
-                <label>Elemento</label>
-                <div id="automationTarget" style="font-weight:600; margin-bottom:8px;"></div>
+                <label><strong>Tipo de elemento:</strong></label>
+                <div id="automationTypeDisplay" style="padding: 8px; background-color: var(--bg-secondary); border-radius: 8px; color: var(--accent-primary); font-weight: 600;"></div>
             </div>
 
+            <div class="automation-grid">
+                <!-- Rango de fechas -->
+                <div class="automation-section">
+                    <label style="font-weight: 600; color: var(--accent-primary);">📅 Rango de Fechas</label>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label style="font-size: 0.9rem;">Fecha inicio</label>
+                        <input type="date" id="autoStartDate">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size: 0.9rem;">Fecha fin</label>
+                        <input type="date" id="autoEndDate">
+                    </div>
+                </div>
+
+                <!-- Días de la semana -->
+                <div class="automation-section">
+                    <label style="font-weight: 600; color: var(--accent-primary);">📆 Días de la Semana</label>
+                    <div class="weekdays-selector" id="weekdaysSelector">
+                        <button class="weekday-btn" data-day="1" onclick="toggleWeekday(event)">Lun</button>
+                        <button class="weekday-btn" data-day="2" onclick="toggleWeekday(event)">Mar</button>
+                        <button class="weekday-btn" data-day="3" onclick="toggleWeekday(event)">Mié</button>
+                        <button class="weekday-btn" data-day="4" onclick="toggleWeekday(event)">Jue</button>
+                        <button class="weekday-btn" data-day="5" onclick="toggleWeekday(event)">Vie</button>
+                        <button class="weekday-btn" data-day="6" onclick="toggleWeekday(event)">Sáb</button>
+                        <button class="weekday-btn" data-day="0" onclick="toggleWeekday(event)">Dom</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuración de horarios (tarea) -->
+            <div id="autoTaskTimeConfig" style="display: none; padding: 16px; background-color: rgba(0,0,0,0.02); border-radius: 8px; margin-bottom: 16px;">
+                <label style="font-weight: 600; color: var(--accent-primary); display: block; margin-bottom: 12px;">⏰ Horario (Tarea)</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label style="font-size: 0.9rem;">Hora inicio</label>
+                        <input type="time" id="autoTaskTimeStart" value="09:00">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label style="font-size: 0.9rem;">Hora fin</label>
+                        <input type="time" id="autoTaskTimeEnd" value="10:00">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuración de horarios (hábito) -->
+            <div id="autoHabitTimeConfig" style="display: none; padding: 16px; background-color: rgba(0,0,0,0.02); border-radius: 8px; margin-bottom: 16px;">
+                <label style="font-weight: 600; color: var(--accent-primary); display: block; margin-bottom: 12px;">⏰ Horario (Hábito)</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label style="font-size: 0.9rem;">Hora inicio</label>
+                        <input type="time" id="autoHabitTimeStart" value="09:00">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label style="font-size: 0.9rem;">Duración (minutos)</label>
+                        <input type="number" id="autoHabitDuration" min="1" value="30">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview -->
             <div class="form-group">
-                <label>Tipo</label>
-                <select id="automationType">
-                    <option value="tarea">Tarea</option>
-                    <option value="habit">Hábito</option>
-                </select>
+                <label style="font-weight: 600;">📋 Vista previa (primeras 10 fechas):</label>
+                <div class="automation-preview" id="autoPreview">
+                    Selecciona fechas y días para ver la vista previa
+                </div>
             </div>
 
-            <div class="form-group">
-                <label>Fecha de inicio</label>
-                <input type="date" id="automationStartDate">
-            </div>
-
-            <div class="form-group">
-                <label>Hora de inicio (opcional)</label>
-                <input type="time" id="automationTimeStart">
-            </div>
-
-            <div class="form-group">
-                <label>Duración (minutos)</label>
-                <input type="number" id="automationDuration" min="0" value="30">
-            </div>
-
-            <div class="form-group">
-                <label>Días a repetir</label>
-                <input type="number" id="automationDays" min="1" value="7">
-            </div>
-
-            <div style="display:flex; gap:8px; margin-top:12px;">
-                <button onclick="saveAutomation()">💾 Guardar automatización</button>
-                <button class="btn-danger" onclick="closeModal('automationModal')">Cancelar</button>
-            </div>
-
-            <div id="automationPreview" style="margin-top:12px; color:var(--text-secondary); font-size:0.95rem;"></div>
-        </div>
-    </div>
-
-    <!-- MODAL: Personal Project (nuevo) -->
-    <div id="personalProjectModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Crear Proyecto Personal</h2>
-                <button class="modal-close" onclick="closeModal('personalProjectModal')">✕ Cerrar</button>
-            </div>
-
-            <div class="form-group">
-                <label>Proyecto</label>
-                <div id="personalProjectTitle" style="font-weight:600; margin-bottom:8px;"></div>
-            </div>
-
-            <div class="form-group">
-                <label>Fecha inicio (opcional)</label>
-                <input type="date" id="ppStartDate">
-            </div>
-
-            <div class="form-group">
-                <label>Fecha fin (opcional)</label>
-                <input type="date" id="ppEndDate">
-            </div>
-
-            <h3 style="margin-top: 16px;">Pasos y tareas</h3>
-            <div id="personalProjectSteps" class="dynamic-list"></div>
-            <div style="margin-top:8px; display:flex; gap:8px;">
-                <button onclick="addPersonalProjectStep()">➕ Añadir paso</button>
-                <button onclick="savePersonalProject()">💾 Crear Proyecto</button>
-                <button class="btn-danger" onclick="closeModal('personalProjectModal')">Cancelar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL PARA EDITAR BLOQUES DE TIEMPO LIBRE -->
-    <div id="timeBlockModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Editar Bloque de Tiempo</h2>
-                <button class="modal-close" onclick="closeModal('timeBlockModal')">✕ Cerrar</button>
-            </div>
-            
-            <div class="form-group">
-                <label>Nombre del bloque</label>
-                <input type="text" id="tbName" placeholder="ej. Descanso, Almuerzo...">
-            </div>
-            
-            <div class="form-group">
-                <label>Hora de inicio</label>
-                <input type="time" id="tbTimeStart">
-            </div>
-            
-            <div class="form-group">
-                <label>Hora de fin</label>
-                <input type="time" id="tbTimeEnd">
-            </div>
-            
-            <input type="hidden" id="tbBlockId">
-            
-            <div style="display:flex; gap:8px; margin-top:16px;">
-                <button onclick="saveTimeBlock()" style="flex:1;">💾 Guardar</button>
-                <button class="btn-danger" onclick="deleteTimeBlock()" style="flex:1;">🗑️ Eliminar</button>
-                <button onclick="closeModal('timeBlockModal')" style="flex:1;">Cancelar</button>
-            </div>
+            <!-- Botón de confirmar -->
+            <button onclick="confirmAutomation()" style="width: 100%; margin-top: 16px;">
+                ✅ Crear Automatización
+            </button>
         </div>
     </div>
 
@@ -1468,15 +1476,6 @@
         let currentDocCategory = 'apuntes';
         let currentPreviewDocId = null;
         let currentMode = 'escolar'; // 'escolar' o 'personal'
-
-        // Añadir array de automatizaciones
-        let automations = [];
-
-        // Añadir array de proyectos (personales)
-        let projects = [];
-
-        // NUEVO: Bloques de tiempo libre
-        let timeBlocks = [];
 
         // ========== MODO (ESCOLAR/PERSONAL) ==========
         function switchMode(mode) {
@@ -1567,8 +1566,8 @@
                             ${item.mode === 'personal' ? '👤' : '🎓'}
                         </span>
                     </div>
-                    <div style="display:flex; gap:6px; align-items:center;">
-                        <button class="btn-small" title="Configurar automatización" onclick="openAutomationForInbox(${item.id})">⚙️</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-small" onclick="openAutomationModal(${item.id})" style="background-color: #9b59b6; color: white;">⚙️ Automatizar</button>
                         <button class="btn-small btn-danger" onclick="deleteInboxItem(${item.id})">
                             🗑️ Eliminar
                         </button>
@@ -1607,7 +1606,6 @@
                         <div class="action-buttons">
                             <button class="btn-action" onclick="processAsTarea()">📝 Tarea</button>
                             <button class="btn-action" onclick="processAsHabit()">🔄 Hábito</button>
-                            <button class="btn-action" onclick="processAsProyectoPersonal()">📋 Proyecto</button>
                             <button class="btn-action btn-danger" onclick="discardItem()">🗑️ Descartar</button>
                         </div>
                     </div>
@@ -1631,176 +1629,33 @@
             }
         }
 
-        // NUEVO: Procesar como "Proyecto" en modo personal
-        function processAsProyectoPersonal() {
-            openPersonalProjectModal();
+        function processAsTarea() {
+            openModal('taskModal');
         }
 
-        // ========== MODAL PERSONAL PROJECT (NUEVO) =========
-        // Insert modal HTML near other modals in the DOM (see below). JS helpers follow.
-
-        function openPersonalProjectModal() {
-            if (!currentProcessingItem) return;
-            document.getElementById('personalProjectTitle').textContent = currentProcessingItem.text;
-            // Reset modal content
-            document.getElementById('ppStartDate').value = '';
-            document.getElementById('ppEndDate').value = '';
-            document.getElementById('personalProjectSteps').innerHTML = '';
-            addPersonalProjectStep(); // create first step by default
-            document.getElementById('personalProjectModal').classList.add('active');
+        function processAsHabit() {
+            openModal('habitModal');
         }
 
-        function addPersonalProjectStep() {
-            const container = document.getElementById('personalProjectSteps');
-            const stepId = 'step-' + Date.now() + '-' + Math.floor(Math.random()*999);
-            const div = document.createElement('div');
-            div.className = 'card';
-            div.style.marginBottom = '10px';
-            div.id = stepId;
-            div.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                    <input placeholder="Nombre del paso (ej. Diseño, Implementación...)" class="pp-step-name" style="flex:1; padding:8px; margin-right:8px;">
-                    <button class="btn-small btn-danger" onclick="document.getElementById('${stepId}').remove()">✕</button>
-                </div>
-                <div style="margin-bottom:8px;">
-                    <button class="btn-small" onclick="addTaskToStep('${stepId}')">➕ Añadir tarea a este paso</button>
-                </div>
-                <div class="pp-tasks-list"></div>
-            `;
-            container.appendChild(div);
+        function processAsExamen() {
+            openModal('examModal');
+            document.getElementById('examTopicsList').innerHTML = '';
+            addExamTopic();
         }
 
-        function addTaskToStep(stepId) {
-            const stepEl = document.getElementById(stepId);
-            if (!stepEl) return;
-            const tasksList = stepEl.querySelector('.pp-tasks-list');
-            const taskId = 'task-' + Date.now() + '-' + Math.floor(Math.random()*999);
-            const div = document.createElement('div');
-            div.className = 'list-item';
-            div.style.marginBottom = '8px';
-            div.innerHTML = `
-                <input placeholder="Tarea (breve)" class="pp-task-title" style="flex:2; padding:8px;">
-                <input type="date" class="pp-task-date" style="flex:1; padding:8px;">
-                <input type="time" class="pp-task-time" style="flex:1; padding:8px;">
-                <input type="number" min="1" class="pp-task-duration" placeholder="min" style="width:80px; padding:8px;">
-                <button class="btn-small btn-danger" onclick="this.parentElement.remove()">✕</button>
-            `;
-            tasksList.appendChild(div);
+        function processAsProyecto() {
+            openModal('projectModal');
+            document.getElementById('projectStepsList').innerHTML = '';
+            addProjectStep();
         }
 
-        function savePersonalProject() {
-            if (!currentProcessingItem) return;
-            const title = currentProcessingItem.text;
-            const startInput = document.getElementById('ppStartDate').value;
-            const endInput = document.getElementById('ppEndDate').value;
-            const stepEls = Array.from(document.querySelectorAll('#personalProjectSteps .card'));
-            if (stepEls.length === 0) return alert('Añade al menos un paso al proyecto.');
-
-            const steps = [];
-            const taskEvents = [];
-            for (let s=0;s<stepEls.length;s++) {
-                const stepEl = stepEls[s];
-                const stepName = (stepEl.querySelector('.pp-step-name') || {value:''}).value.trim() || `Paso ${s+1}`;
-                const taskNodes = Array.from(stepEl.querySelectorAll('.pp-tasks-list .list-item'));
-                if (taskNodes.length === 0) return alert(`Añade al menos una tarea al paso "${stepName}".`);
-                const stepObj = { id: Date.now()+s, title: stepName, tasks: [] };
-                taskNodes.forEach((tn, idx) => {
-                    const tTitle = (tn.querySelector('.pp-task-title') || {value:''}).value.trim() || `Tarea ${idx+1}`;
-                    const tDate = (tn.querySelector('.pp-task-date') || {value:''}).value;
-                    const tTime = (tn.querySelector('.pp-task-time') || {value:''}).value;
-                    const tDur = parseInt((tn.querySelector('.pp-task-duration') || {value:0}).value,10) || 0;
-                    if (!tDate || !tTime || tDur <= 0) throwAlert(`Completa fecha, hora y duración para la tarea "${tTitle}" en el paso "${stepName}".`);
-                    const tEnd = addMinutesToTime(tTime, tDur);
-                    const taskObj = {
-                        id: Date.now() + Math.floor(Math.random()*99999),
-                        title: tTitle,
-                        date: tDate,
-                        timeStart: tTime,
-                        timeEnd: tEnd,
-                        duration: tDur,
-                        completed: false
-                    };
-                    stepObj.tasks.push(taskObj);
-                    taskEvents.push(taskObj);
-                });
-                steps.push(stepObj);
+        function discardItem() {
+            if (currentProcessingItem) {
+                currentProcessingItem.processed = true;
+                renderInbox();
+                renderProcessArea();
+                persistData();
             }
-
-            // compute project start/end from input or from tasks
-            let projectStart = startInput || null;
-            let projectEnd = endInput || null;
-            if (!projectStart || !projectEnd) {
-                const dates = taskEvents.map(t => t.date).sort();
-                if (dates.length > 0) {
-                    projectStart = projectStart || dates[0];
-                    projectEnd = projectEnd || dates[dates.length-1];
-                }
-            }
-
-            const pid = Date.now() + Math.floor(Math.random()*9999);
-            const project = {
-                id: pid,
-                title,
-                startDate: projectStart,
-                endDate: projectEnd,
-                steps,
-                createdAt: new Date().toISOString(),
-                completed: false
-            };
-
-            // create scheduled events for each task (automatic)
-            taskEvents.forEach(te => {
-                scheduledEvents.push({
-                    id: te.id,
-                    title: `📋 ${te.title} • ${project.title}`,
-                    type: 'tarea-personal',
-                    date: te.date,
-                    timeStart: te.timeStart,
-                    timeEnd: te.timeEnd,
-                    duration: te.duration,
-                    completed: false,
-                    mode: 'personal',
-                    projectId: pid
-                });
-            });
-
-            projects.push(project);
-
-            // mark inbox item processed
-            currentProcessingItem.processed = true;
-
-            // persist and refresh UI
-            updateProjectCompletionStatus(); // ensure consistent state
-            persistData();
-            closeModal('personalProjectModal');
-            renderInbox();
-            renderProcessArea();
-            renderCalendar();
-            renderTodayTasks();
-            renderEnhancedMetrics();
-
-            alert('✅ Proyecto creado y tareas añadidas al calendario.');
-            return;
-
-            function throwAlert(msg) {
-                alert(msg);
-                throw new Error(msg);
-            }
-        }
-
-        function getProjectById(id) {
-            return projects.find(p => p.id === id);
-        }
-
-        function updateProjectCompletionStatus() {
-            projects.forEach(p => {
-                // compute from scheduledEvents tasks linked to projectId
-                const projEvents = scheduledEvents.filter(e => e.projectId === p.id);
-                if (projEvents.length === 0) { p.completed = false; return; }
-                const completedCount = projEvents.filter(e => e.completed).length;
-                p.progress = Math.round((completedCount / projEvents.length) * 100);
-                p.completed = (completedCount === projEvents.length);
-            });
         }
 
         // ========== MODALES ==========
@@ -2128,7 +1983,6 @@
                 
                 if (name && minutes > 0) {
                     steps.push({ name, minutes, index: i+1 });
-
                 }
             }
             
@@ -2257,7 +2111,6 @@
             const container = document.getElementById('dayTimeSlots');
             const dateStr = currentDate.toISOString().split('T')[0];
             const dayEvents = scheduledEvents.filter(e => e.date === dateStr);
-            const dayBlocks = timeBlocks.filter(b => b.date === dateStr);
             
             let html = '';
             for (let hour = 0; hour <= 23; hour++) {
@@ -2268,15 +2121,10 @@
                     return eventHour === hour;
                 });
                 
-                const blocksInSlot = dayBlocks.filter(b => {
-                    const blockHour = parseInt(b.timeStart.split(':')[0], 10);
-                    return b.date === dateStr && blockHour === hour;
-                });
-                
                 html += `
                     <div class="time-slot" data-time="${timeStr}">
                         <div class="time-label">${timeStr}</div>
-                        <div class="time-content" ondrop="drop(event)" ondragover="allowDrop(event)" data-date="${dateStr}" data-time="${timeStr}" ondblclick="createTimeBlockAtTime('${dateStr}', '${timeStr}')">
+                        <div class="time-content" ondrop="drop(event)" ondragover="allowDrop(event)" data-date="${dateStr}" data-time="${timeStr}">
                             ${eventsInSlot.map(e => {
                                 const minutes = calculateDuration(e.timeStart, e.timeEnd);
                                 const heightPercent = (minutes / 60) * 100;
@@ -2284,16 +2132,6 @@
                                     <div class="event-block ${e.type}" draggable="true" ondragstart="drag(event)" onclick="editEventTimePeriod(event, ${e.id})" data-id="${e.id}" style="height: ${heightPercent}%; min-height: auto; display: flex; flex-direction: column; justify-content: center;">
                                         <strong>${e.title}</strong>
                                         <small>${e.timeStart} - ${e.timeEnd}</small>
-                                    </div>
-                                `;
-                            }).join('')}
-                            ${blocksInSlot.map(b => {
-                                const minutes = calculateDuration(b.timeStart, b.timeEnd);
-                                const heightPercent = (minutes / 60) * 100;
-                                return `
-                                    <div class="event-block bloque" onclick="editTimeBlock(event, ${b.id})" data-id="${b.id}" style="height: ${heightPercent}%; min-height: auto; display: flex; flex-direction: column; justify-content: center; cursor: pointer;">
-                                        <strong>${escapeHtml(b.name)}</strong>
-                                        <small>${b.timeStart} - ${b.timeEnd}</small>
                                     </div>
                                 `;
                             }).join('')}
@@ -2332,11 +2170,6 @@
                         const eventHour = parseInt(e.timeStart.split(':')[0], 10);
                         return e.date === dateStr && eventHour === hour;
                     });
-
-                    const blocksInSlot = timeBlocks.filter(b => {
-                        const blockHour = parseInt(b.timeStart.split(':')[0], 10);
-                        return b.date === dateStr && blockHour === hour;
-                    });
                     
                     html += `
                         <div class="week-cell" ondrop="drop(event)" ondragover="allowDrop(event)" data-date="${dateStr}" data-time="${timeStr}">
@@ -2346,15 +2179,6 @@
                                 return `
                                     <div class="event-block ${e.type}" draggable="true" ondragstart="drag(event)" onclick="editEventTimePeriod(event, ${e.id})" data-id="${e.id}" style="font-size: 0.75rem; height: ${heightPercent}%; min-height: auto; display: flex; flex-direction: column; justify-content: center;">
                                         ${e.title.substring(0, 20)}...
-                                    </div>
-                                `;
-                            }).join('')}
-                            ${blocksInSlot.map(b => {
-                                const minutes = calculateDuration(b.timeStart, b.timeEnd);
-                                const heightPercent = (minutes / 60) * 100;
-                                return `
-                                    <div class="event-block bloque" onclick="editTimeBlock(event, ${b.id})" data-id="${b.id}" style="font-size: 0.75rem; height: ${heightPercent}%; min-height: auto; display: flex; flex-direction: column; justify-content: center; cursor: pointer;">
-                                        ${b.name.substring(0, 20)}...
                                     </div>
                                 `;
                             }).join('')}
@@ -2385,7 +2209,6 @@
                 const date = new Date(year, month, day);
                 const dateStr = date.toISOString().split('T')[0];
                 const dayEvents = scheduledEvents.filter(e => e.date === dateStr);
-                const dayBlocks = timeBlocks.filter(b => b.date === dateStr);
                 
                 html += `
                     <div class="month-day">
@@ -2393,11 +2216,6 @@
                         ${dayEvents.map(e => `
                             <div class="month-event ${e.type}" onclick="editEventTimePeriod(event, ${e.id})" style="cursor:pointer;">
                                 ${e.title.substring(0, 15)}...
-                            </div>
-                        `).join('')}
-                        ${dayBlocks.map(b => `
-                            <div class="month-event bloque" onclick="editTimeBlock(event, ${b.id})" style="cursor:pointer;">
-                                ${escapeHtml(b.name).substring(0, 15)}...
                             </div>
                         `).join('')}
                     </div>
@@ -2506,32 +2324,29 @@
                 return a.timeStart.localeCompare(b.timeStart);
             });
             
-            container.innerHTML = sorted.map(event => {
-                const proj = event.projectId ? getProjectById(event.projectId) : null;
-                return `
-                    <div class="task-item ${event.completed ? 'completed' : ''}">
-                        <div>
-                            <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 8px;">
-                                ${event.title}${proj ? ` <small style="color:var(--text-secondary)">• ${escapeHtml(proj.title)}</small>` : ''}
-                            </div>
-                            <div>
-                                <span class="badge badge-${event.type}">${event.type.toUpperCase()}</span>
-                                ${event.timeStart ? 
-                                    `<span style="color: var(--text-secondary);">⏰ ${event.timeStart} - ${event.timeEnd}</span>` :
-                                    `<span style="color: var(--text-secondary);">📌 Sin horario específico</span>`
-                                }
-                            </div>
+            container.innerHTML = sorted.map(event => `
+                <div class="task-item ${event.completed ? 'completed' : ''}">
+                    <div>
+                        <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 8px;">
+                            ${event.title}
                         </div>
                         <div>
-                            ${!event.completed ? 
-                                `<button class="btn-success" onclick="completeEvent(${event.id})">✅ Completar</button>
-                                 ${event.timeStart ? `<button class="btn-small" onclick="editEventTime(${event.id})" style="background-color: var(--accent-primary); margin-left: 8px;">⏱️ Ajustar</button>` : ''}` :
-                                '<span style="color: var(--success);">✅ Completada</span>'
+                            <span class="badge badge-${event.type}">${event.type.toUpperCase()}</span>
+                            ${event.timeStart ? 
+                                `<span style="color: var(--text-secondary);">⏰ ${event.timeStart} - ${event.timeEnd}</span>` :
+                                `<span style="color: var(--text-secondary);">📌 Sin horario específico</span>`
                             }
                         </div>
                     </div>
-                `;
-            }).join('');
+                    <div>
+                        ${!event.completed ? 
+                            `<button class="btn-success" onclick="completeEvent(${event.id})">✅ Completar</button>
+                             ${event.timeStart ? `<button class="btn-small" onclick="editEventTime(${event.id})" style="background-color: var(--accent-primary); margin-left: 8px;">⏱️ Ajustar</button>` : ''}` :
+                            '<span style="color: var(--success);">✅ Completada</span>'
+                        }
+                    </div>
+                </div>
+            `).join('');
         }
 
         function completeEvent(id) {
@@ -2539,13 +2354,26 @@
             if (ev) {
                 ev.completed = true;
                 persistData();
-                // If event belongs to a project, update project progress/completion
-                if (ev.projectId) {
-                    updateProjectCompletionStatus();
-                }
                 renderTodayTasks();
                 renderEnhancedMetrics();
             }
+        }
+
+        function editEventTime(id) {
+            const ev = scheduledEvents.find(e => e.id === id);
+            if (!ev) return;
+            
+            const newStart = prompt('Nueva hora de inicio (HH:MM):', ev.timeStart);
+            if (!newStart) return;
+            
+            const newEnd = prompt('Nueva hora de fin (HH:MM):', ev.timeEnd);
+            if (!newEnd) return;
+            
+            ev.timeStart = newStart;
+            ev.timeEnd = newEnd;
+            persistData();
+            renderTodayTasks();
+            renderCalendar();
         }
 
         // ========== EVALUAR (FASE 4) ==========
@@ -2634,7 +2462,7 @@
                 const panel = document.createElement('div');
                 panel.className = 'metric-panel';
                 panel.innerHTML = `
-                    <h3>${typesMap[type] || type}</h3>
+                    <h3>${typesMap[type]}</h3>
                     <div class="metric-value-large">${info.count} items • ${info.completed} ✅</div>
                     <div class="progress"><div class="progress-bar" id="bar-${type}" style="width:${pct}%;"></div></div>
                     <div style="margin-top:8px; color:var(--text-secondary); font-size:0.95rem;">
@@ -2643,39 +2471,6 @@
                 `;
                 grid.appendChild(panel);
             });
-
-            // NUEVO: sección Proyectos (solo en modo personal)
-            if (currentMode === 'personal') {
-                updateProjectCompletionStatus();
-                const totalProjects = projects.length;
-                const completedProjects = projects.filter(p => p.completed).length;
-                const inProgress = projects.filter(p => !p.completed).length;
-                const projPanel = document.createElement('div');
-                projPanel.className = 'metric-panel';
-                projPanel.innerHTML = `
-                    <h3>Proyectos</h3>
-                    <div class="metric-value-large">${totalProjects} totales • ${completedProjects} completados</div>
-                    <div style="margin-top:8px; color:var(--text-secondary); font-size:0.95rem;">
-                        ${inProgress} en curso
-                    </div>
-                `;
-                grid.appendChild(projPanel);
-
-                // Mostrar proyectos activos con su progreso
-                projects.forEach(p => {
-                    const pDiv = document.createElement('div');
-                    pDiv.className = 'metric-panel';
-                    pDiv.innerHTML = `
-                        <h3 style="font-size:0.95rem;">${escapeHtml(p.title)}</h3>
-                        <div style="font-weight:700; font-size:1.1rem; margin-bottom:6px;">${p.progress || 0}%</div>
-                        <div class="progress"><div class="progress-bar" style="width:${p.progress || 0}%;"></div></div>
-                        <div style="margin-top:8px; color:var(--text-secondary); font-size:0.85rem;">
-                            ${p.completed ? '✅ Completado' : `En curso: ${p.progress || 0}%`}
-                        </div>
-                    `;
-                    grid.appendChild(pDiv);
-                });
-            }
 
             const overallPct = percentage(overallCompleted, Math.max(1, overallTotal));
             document.getElementById('overallRate').textContent = `${overallPct}%`;
@@ -3036,13 +2831,10 @@
                 inbox: inbox,
                 scheduledEvents: scheduledEvents,
                 docs: docs,
-                automations: automations,
                 improvements: (() => {
                     const raw = localStorage.getItem('gtd_improvements');
                     return raw ? JSON.parse(raw) : [];
-                })(),
-                projects: projects,
-                timeBlocks: timeBlocks
+                })()
             };
             localStorage.setItem('gtd_data', JSON.stringify(data));
         }
@@ -3055,9 +2847,6 @@
                     inbox = data.inbox || [];
                     scheduledEvents = data.scheduledEvents || [];
                     docs = data.docs || [];
-                    automations = data.automations || [];
-                    projects = data.projects || [];
-                    timeBlocks = data.timeBlocks || [];
                 } catch(e) {
                     console.warn('Error cargando datos', e);
                 }
@@ -3072,7 +2861,6 @@
                 inbox: inbox,
                 scheduledEvents: scheduledEvents,
                 docs: docs,
-                automations: automations,
                 improvements: (() => {
                     const raw = localStorage.getItem('gtd_improvements');
                     return raw ? JSON.parse(raw) : [];
@@ -3085,8 +2873,6 @@
                     const raw = localStorage.getItem('gtd_reflection_latest');
                     return raw ? JSON.parse(raw) : null;
                 })(),
-                projects: projects,
-                timeBlocks: timeBlocks,
                 exportDate: new Date().toISOString()
             };
 
@@ -3113,9 +2899,6 @@
                     inbox = importedData.inbox || [];
                     scheduledEvents = importedData.scheduledEvents || [];
                     docs = importedData.docs || [];
-                    automations = importedData.automations || [];
-                    projects = importedData.projects || [];
-                    timeBlocks = importedData.timeBlocks || [];
 
                     if (importedData.improvements) {
                         localStorage.setItem('gtd_improvements', JSON.stringify(importedData.improvements));
@@ -3137,7 +2920,6 @@
                     renderEnhancedMetrics();
                     renderTodayTasks();
                     renderDocs();
-                    renderAutomations();
 
                     alert('✅ Datos importados correctamente. Recargando...');
                     event.target.value = '';
@@ -3150,301 +2932,213 @@
             reader.readAsText(file);
         }
 
-        // Inicialización: asegurar que se renderizan automatizaciones
+        // ========== INICIALIZACIÓN ==========
         loadData();
         renderInbox();
         renderCalendar();
         loadReflectionConfig();
         loadImprovements();
         renderEnhancedMetrics();
-        renderAutomations();
 
-// ====== Funciones añadidas: procesamiento de elementos faltantes ======
-function processAsTarea() {
-	// Abre modal de tarea para finalizar el procesamiento desde la fase 2
-	openModal('taskModal');
-	// Asegurar que el formulario de agendado está oculto al abrir
-	document.getElementById('scheduleTaskForm').style.display = 'none';
-}
+        // ========== AUTOMATIZACIÓN ==========
+        let currentAutomationItem = null;
+        let selectedWeekdays = [];
 
-function processAsHabit() {
-	// Abre modal de hábito
-	openModal('habitModal');
-	document.getElementById('scheduleHabitForm').style.display = 'none';
-	document.getElementById('habitDateForm').style.display = 'none';
-}
+        function openAutomationModal(itemId) {
+            const item = inbox.find(i => i.id === itemId);
+            if (!item) return;
 
-function processAsExamen() {
-	// Abre modal de examen
-	openModal('examModal');
-	// limpiar lista de topics si fuera necesario (opcional)
-	// document.getElementById('examTopicsList').innerHTML = '';
-}
+            currentAutomationItem = item;
+            selectedWeekdays = [];
 
-function processAsProyecto() {
-	// Abre modal de proyecto (escolar)
-	openModal('projectModal');
-	// document.getElementById('projectStepsList').innerHTML = '';
-}
+            // Determinar tipo
+            const isPersonal = item.mode === 'personal';
+            const typeText = isPersonal ? '👤 Personal (Tarea/Hábito)' : '🎓 Escolar (Tarea/Examen/Proyecto)';
+            document.getElementById('automationTypeDisplay').textContent = typeText;
 
-function discardItem() {
-	// Marcar el elemento actual como procesado (descartar)
-	if (!currentProcessingItem) return;
-	if (!confirm('¿Seguro que deseas descartar este elemento?')) return;
-	currentProcessingItem.processed = true;
-	renderInbox();
-	renderProcessArea();
-	persistData();
-	alert('Elemento descartado');
-}
+            // Mostrar/ocultar configuraciones según modo
+            if (isPersonal) {
+                document.getElementById('autoTaskTimeConfig').style.display = 'block';
+                document.getElementById('autoHabitTimeConfig').style.display = 'block';
+            } else {
+                document.getElementById('autoTaskTimeConfig').style.display = 'block';
+                document.getElementById('autoHabitTimeConfig').style.display = 'none';
+            }
 
-// ====== Automatizaciones: abrir, guardar, listar, ejecutar, eliminar ======
-let automationTargetInboxId = null;
+            // Resetear selectores
+            document.querySelectorAll('.weekday-btn').forEach(btn => btn.classList.remove('selected'));
+            document.getElementById('autoStartDate').value = '';
+            document.getElementById('autoEndDate').value = '';
+            document.getElementById('autoTaskTimeStart').value = '09:00';
+            document.getElementById('autoTaskTimeEnd').value = '10:00';
+            document.getElementById('autoHabitTimeStart').value = '09:00';
+            document.getElementById('autoHabitDuration').value = '30';
 
-function openAutomationForInbox(inboxId) {
-	const item = inbox.find(i => i.id === inboxId);
-	if (!item) return;
-	automationTargetInboxId = inboxId;
-	document.getElementById('automationTarget').textContent = item.text;
-	// Prefill sensible defaults
-	document.getElementById('automationStartDate').value = new Date().toISOString().split('T')[0];
-	document.getElementById('automationTimeStart').value = '';
-	document.getElementById('automationDuration').value = 30;
-	document.getElementById('automationDays').value = 7;
-	document.getElementById('automationType').value = item.mode === 'personal' ? 'habit' : 'tarea';
-	openModal('automationModal');
-	updateAutomationPreview();
-}
+            openModal('automationModal');
+            updateAutomationPreview();
+        }
 
-function updateAutomationPreview() {
-	const t = document.getElementById('automationType').value;
-	const sd = document.getElementById('automationStartDate').value;
-	const ts = document.getElementById('automationTimeStart').value;
-	const days = document.getElementById('automationDays').value;
-	const preview = document.getElementById('automationPreview');
-	if (!preview) return;
-	preview.textContent = `Tipo: ${t} • Inicio: ${sd}${ts ? ' • ' + ts : ''} • Repite cada ${days} días`;
-}
+        function toggleWeekday(event) {
+            const btn = event.currentTarget;
+            const day = parseInt(btn.getAttribute('data-day'), 10);
+            
+            if (selectedWeekdays.includes(day)) {
+                selectedWeekdays = selectedWeekdays.filter(d => d !== day);
+                btn.classList.remove('selected');
+            } else {
+                selectedWeekdays.push(day);
+                btn.classList.add('selected');
+            }
+            
+            updateAutomationPreview();
+        }
 
-function saveAutomation() {
-	const type = document.getElementById('automationType').value;
-	const startDate = document.getElementById('automationStartDate').value;
-	const timeStart = document.getElementById('automationTimeStart').value;
-	const duration = parseInt(document.getElementById('automationDuration').value, 10) || 30;
-	const days = parseInt(document.getElementById('automationDays').value, 10) || 7;
+        function updateAutomationPreview() {
+            const startDate = document.getElementById('autoStartDate').value;
+            const endDate = document.getElementById('autoEndDate').value;
+            const preview = document.getElementById('autoPreview');
 
-	if (!startDate) { alert('Indica la fecha de inicio'); return; }
+            if (!startDate || !endDate || selectedWeekdays.length === 0) {
+                preview.textContent = 'Selecciona fechas y días para ver la vista previa';
+                preview.style.color = 'var(--text-secondary)';
+                return;
+            }
 
-	const targetItem = inbox.find(i => i.id === automationTargetInboxId);
-	const entry = {
-		id: Date.now(),
-		targetInboxId: automationTargetInboxId,
-		targetText: targetItem ? targetItem.text : document.getElementById('automationTarget').textContent,
-		type, startDate, timeStart: timeStart || null, duration, days,
-		createdAt: new Date().toISOString()
-	};
+            const start = new Date(startDate + 'T00:00:00');
+            const end = new Date(endDate + 'T00:00:00');
 
-	automations.push(entry);
-	persistData();
-	renderAutomations();
-	closeModal('automationModal');
-	alert('Automatización guardada');
-}
+            if (start > end) {
+                preview.textContent = '❌ La fecha de inicio debe ser anterior a la de fin';
+                preview.style.color = 'var(--danger)';
+                return;
+            }
 
-function renderAutomations() {
-	const container = document.getElementById('automationList');
-	const empty = document.getElementById('automationEmptyState');
-	if (!container) return;
-	container.innerHTML = '';
-	if (!automations || automations.length === 0) {
-		empty.style.display = 'block';
-		return;
-	}
-	empty.style.display = 'none';
-	automations.forEach(a => {
-		const div = document.createElement('div');
-		div.className = 'card';
-		div.style.display = 'flex';
-		div.style.justifyContent = 'space-between';
-		div.style.alignItems = 'center';
-		div.innerHTML = `
-			<div>
-				<strong>${escapeHtml(a.targetText)}</strong>
-				<div style="color:var(--text-secondary); font-size:0.9rem;">
-					${a.type} • ${a.startDate}${a.timeStart ? ' • '+a.timeStart : ''} • cada ${a.days} días
-				</div>
-			</div>
-			<div style="display:flex; gap:8px;">
-				<button onclick="runAutomationNow(${a.id})">▶️ Ejecutar</button>
-				<button class="btn-danger" onclick="deleteAutomation(${a.id})">🗑️</button>
-			</div>
-		`;
-		container.appendChild(div);
-	});
-}
+            const dates = [];
+            const current = new Date(start);
 
-function deleteAutomation(id) {
-	if (!confirm('¿Eliminar esta automatización?')) return;
-	automations = automations.filter(a => a.id !== id);
-	persistData();
-	renderAutomations();
-}
+            while (current <= end && dates.length < 10) {
+                if (selectedWeekdays.includes(current.getDay())) {
+                    dates.push(new Date(current));
+                }
+                current.setDate(current.getDate() + 1);
+            }
 
-function runAutomationNow(id) {
-	const a = automations.find(x => x.id === id);
-	if (!a) return;
-	const date = a.startDate;
-	let timeStart = a.timeStart;
-	let timeEnd = null;
-	if (timeStart) {
-		timeEnd = addMinutesToTime(timeStart, a.duration);
-	}
-	const evType = a.type === 'habit' ? 'habit' : (a.type === 'tarea' ? 'tarea' : 'tarea');
-	const mode = a.type === 'habit' ? 'personal' : 'escolar';
-	scheduledEvents.push({
-		id: Date.now(),
-		title: a.targetText,
-		type: evType,
-		date: date,
-		timeStart: timeStart || null,
-		timeEnd: timeEnd,
-		duration: a.duration,
-		completed: false,
-		mode: mode
-	});
-	persistData();
-	renderCalendar();
-	renderTodayTasks();
-	renderEnhancedMetrics();
-	alert('Automatización ejecutada: evento creado en el calendario.');
-}
+            if (dates.length === 0) {
+                preview.textContent = '❌ No hay fechas coincidentes con los días seleccionados';
+                preview.style.color = 'var(--danger)';
+                return;
+            }
 
-// Asegurar que la vista previa se actualiza si el usuario cambia algo en el modal
-document.addEventListener('change', function(e){
-	if (e.target && (e.target.id === 'automationType' || e.target.id === 'automationStartDate' || e.target.id === 'automationTimeStart' || e.target.id === 'automationDays')) {
-		updateAutomationPreview();
-	}
-});
+            const dateStrings = dates.map(d => d.toLocaleDateString('es-ES', {weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'}));
+            preview.innerHTML = `<strong>${dates.length} fecha${dates.length > 1 ? 's' : ''} generada${dates.length > 1 ? 's' : ''}:</strong><br>` + dateStrings.join('<br>');
+            preview.style.color = 'var(--text-primary)';
+        }
 
-// ====== BLOQUES DE TIEMPO LIBRE (NUEVO) ======
-function createTimeBlockAtTime(dateStr, timeStr) {
-	const name = prompt('Nombre del bloque (ej. Descanso, Almuerzo)', 'Bloque de tiempo');
-	if (!name) return;
-	const start = prompt('Hora de inicio (HH:MM)', timeStr);
-	if (!start) return;
-	const end = prompt('Hora de fin (HH:MM)', addMinutesToTime(start, 60));
-	if (!end) return;
-	
-	const block = {
-		id: Date.now() + Math.floor(Math.random()*9999),
-		date: dateStr,
-		name: name.trim(),
-		timeStart: start,
-		timeEnd: end,
-		createdAt: new Date().toISOString()
-	};
-	
-	timeBlocks.push(block);
-	persistData();
-	renderCalendar();
-	alert('✅ Bloque de tiempo creado');
-}
+        function confirmAutomation() {
+            const item = currentAutomationItem;
+            if (!item) return;
 
-function editTimeBlock(e, blockId) {
-	e.stopPropagation();
-	const block = timeBlocks.find(b => b.id === blockId);
-	if (!block) return;
-	
-	openTimeBlockModal(block);
-}
+            const startDate = document.getElementById('autoStartDate').value;
+            const endDate = document.getElementById('autoEndDate').value;
 
-function openTimeBlockModal(block) {
-	const modal = document.getElementById('timeBlockModal');
-	if (!modal) {
-		// Create modal if it doesn't exist
-		createTimeBlockModal();
-		openTimeBlockModal(block);
-		return;
-	}
-	
-	document.getElementById('tbName').value = block.name;
-	document.getElementById('tbTimeStart').value = block.timeStart;
-	document.getElementById('tbTimeEnd').value = block.timeEnd;
-	document.getElementById('tbBlockId').value = block.id;
-	
-	modal.classList.add('active');
-}
+            if (!startDate || !endDate || selectedWeekdays.length === 0) {
+                alert('⚠️ Completa todos los campos: fechas y días de la semana');
+                return;
+            }
 
-function createTimeBlockModal() {
-	const modal = document.createElement('div');
-	modal.id = 'timeBlockModal';
-	modal.className = 'modal';
-	modal.innerHTML = `
-		<div class="modal-content">
-			<div class="modal-header">
-				<h2>Editar Bloque de Tiempo</h2>
-				<button class="modal-close" onclick="closeModal('timeBlockModal')">✕ Cerrar</button>
-			</div>
-			
-			<div class="form-group">
-				<label>Nombre del bloque</label>
-				<input type="text" id="tbName" placeholder="ej. Descanso, Almuerzo...">
-			</div>
-			
-			<div class="form-group">
-				<label>Hora de inicio</label>
-				<input type="time" id="tbTimeStart">
-			</div>
-			
-			<div class="form-group">
-				<label>Hora de fin</label>
-				<input type="time" id="tbTimeEnd">
-			</div>
-			
-			<input type="hidden" id="tbBlockId">
-			
-			<div style="display:flex; gap:8px; margin-top:16px;">
-				<button onclick="saveTimeBlock()" style="flex:1;">💾 Guardar</button>
-				<button class="btn-danger" onclick="deleteTimeBlock()" style="flex:1;">🗑️ Eliminar</button>
-				<button onclick="closeModal('timeBlockModal')" style="flex:1;">Cancelar</button>
-			</div>
-		</div>
-	`;
-	document.body.appendChild(modal);
-}
+            const start = new Date(startDate + 'T00:00:00');
+            const end = new Date(endDate + 'T00:00:00');
 
-function saveTimeBlock() {
-	const blockId = parseInt(document.getElementById('tbBlockId').value, 10);
-	const name = document.getElementById('tbName').value.trim();
-	const timeStart = document.getElementById('tbTimeStart').value;
-	const timeEnd = document.getElementById('tbTimeEnd').value;
-	
-	if (!name || !timeStart || !timeEnd) {
-		alert('⚠️ Completa todos los campos');
-		return;
-	}
-	
-	const block = timeBlocks.find(b => b.id === blockId);
-	if (block) {
-		block.name = name;
-		block.timeStart = timeStart;
-		block.timeEnd = timeEnd;
-		persistData();
-		renderCalendar();
-		closeModal('timeBlockModal');
-		alert('✅ Bloque actualizado');
-	}
-}
+            if (start > end) {
+                alert('⚠️ La fecha de inicio debe ser anterior a la de fin');
+                return;
+            }
 
-function deleteTimeBlock() {
-	if (!confirm('¿Eliminar este bloque de tiempo?')) return;
-	const blockId = parseInt(document.getElementById('tbBlockId').value, 10);
-	timeBlocks = timeBlocks.filter(b => b.id !== blockId);
-	persistData();
-	renderCalendar();
-	closeModal('timeBlockModal');
-	alert('🗑️ Bloque eliminado');
-}
+            // Generar fechas
+            const dates = [];
+            const current = new Date(start);
+
+            while (current <= end) {
+                if (selectedWeekdays.includes(current.getDay())) {
+                    dates.push(new Date(current).toISOString().split('T')[0]);
+                }
+                current.setDate(current.getDate() + 1);
+            }
+
+            if (dates.length === 0) {
+                alert('❌ No hay fechas coincidentes');
+                return;
+            }
+
+            // Crear eventos según modo
+            const isPersonal = item.mode === 'personal';
+
+            if (isPersonal) {
+                // Modo personal: permitir elegir si es tarea o hábito
+                const choice = confirm('¿Es un HÁBITO? (OK) o ¿Es una TAREA? (Cancelar)');
+                const type = choice ? 'habit' : 'tarea-personal';
+
+                if (type === 'habit') {
+                    const timeStart = document.getElementById('autoHabitTimeStart').value;
+                    const duration = parseInt(document.getElementById('autoHabitDuration').value, 10);
+
+                    dates.forEach(dateStr => {
+                        const timeEnd = addMinutesToTime(timeStart, duration);
+                        scheduledEvents.push({
+                            id: Date.now() + Math.floor(Math.random() * 10000),
+                            title: item.text,
+                            type: 'habit',
+                            date: dateStr,
+                            timeStart: timeStart,
+                            timeEnd: timeEnd,
+                            completed: false,
+                            mode: 'personal'
+                        });
+                    });
+                } else {
+                    const timeStart = document.getElementById('autoTaskTimeStart').value;
+                    const timeEnd = document.getElementById('autoTaskTimeEnd').value;
+
+                    dates.forEach(dateStr => {
+                        scheduledEvents.push({
+                            id: Date.now() + Math.floor(Math.random() * 10000),
+                            title: item.text,
+                            type: 'tarea-personal',
+                            date: dateStr,
+                            timeStart: timeStart,
+                            timeEnd: timeEnd,
+                            completed: false,
+                            mode: 'personal'
+                        });
+                    });
+                }
+            } else {
+                // Modo escolar: tareas simples
+                const timeStart = document.getElementById('autoTaskTimeStart').value;
+                const timeEnd = document.getElementById('autoTaskTimeEnd').value;
+
+                dates.forEach(dateStr => {
+                    scheduledEvents.push({
+                        id: Date.now() + Math.floor(Math.random() * 10000),
+                        title: item.text,
+                        type: 'tarea',
+                        date: dateStr,
+                        timeStart: timeStart,
+                        timeEnd: timeEnd,
+                        completed: false,
+                        mode: 'escolar'
+                    });
+                });
+            }
+
+            // Marcar como procesado
+            item.processed = true;
+            closeModal('automationModal');
+            renderInbox();
+            renderProcessArea();
+            persistData();
+            alert(`✅ Automatización creada: ${dates.length} evento${dates.length > 1 ? 's' : ''} generado${dates.length > 1 ? 's' : ''}`);
+        }
     </script>
 </body>
 </html>
