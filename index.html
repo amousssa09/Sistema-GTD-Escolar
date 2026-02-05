@@ -1032,6 +1032,7 @@
             <button class="tab-btn" onclick="showSection('evaluar')">4. Evaluar</button>
             <button class="tab-btn" onclick="showSection('hacer')">5. Hacer (Hoy)</button>
             <button class="tab-btn" onclick="showSection('configuracion')">⚙️ Configuración</button>
+            <button class="tab-btn" id="bookTrackerTab" style="display:none;" onclick="showSection('bookTracker')">📖 Book Tracker</button>
             <button class="tab-btn" id="docTab" onclick="showSection('documentacion')">📚 Documentación</button>
         </div>
 
@@ -1150,47 +1151,82 @@
                     </div>
                 </div>
 
-                <!-- Reflexión manual - DESPLEGABLE -->
+                <!-- KAIZEN System: Daily & Weekly Reflections -->
                 <div class="metric-panel reflection-panel">
-                    <button class="reflection-toggle collapsed" onclick="toggleReflectionPanel(event)">
-                        <span>📝 Reflexión semanal + Tareas de mejora</span>
+                    <button class="reflection-toggle collapsed" onclick="toggleKaizenPanel(event)">
+                        <span>🔄 Sistema Kaizen - Reflexiones Diarias y Semanales</span>
                     </button>
 
-                    <div class="reflection-content" id="reflectionContent">
-                        <!-- Formulario de reflexión -->
-                        <div class="reflection-form-group">
-                            <label>¿Qué utilidad has tenido esta semana?</label>
-                            <textarea id="q1" placeholder="Describe brevemente..."></textarea>
+                    <div class="reflection-content" id="kaizenContent">
+                        <!-- Tabs: Diario / Semanal -->
+                        <div style="display:flex; gap:8px; margin-bottom:16px; border-bottom:2px solid var(--border-color); padding-bottom:8px;">
+                            <button class="view-btn active" id="dailyReflectionTab" onclick="switchKaizenTab('daily', event)" style="border:none; background:transparent;">📅 Diario</button>
+                            <button class="view-btn" id="weeklyReflectionTab" onclick="switchKaizenTab('weekly', event)" style="border:none; background:transparent;">📊 Semanal</button>
                         </div>
 
-                        <div class="reflection-form-group">
-                            <label>Aspectos más útiles</label>
-                            <textarea id="q2" placeholder="¿Qué funcionó mejor?"></textarea>
+                        <!-- FORMULARIO DIARIO -->
+                        <div id="dailyReflectionForm" style="display:block;">
+                            <div class="form-group">
+                                <label>Fecha</label>
+                                <input type="date" id="dailyDate">
+                            </div>
+                            <div class="reflection-form-group">
+                                <label>📝 Resumen del día</label>
+                                <textarea id="dailySummary" placeholder="¿Qué pasó hoy? Descripción general del día..."></textarea>
+                            </div>
+                            <div class="reflection-form-group">
+                                <label>✅ Lo que salió bien y por qué</label>
+                                <textarea id="dailyWellDone" placeholder="¿Qué funcionó bien hoy? ¿Por qué crees que salió bien?"></textarea>
+                            </div>
+                            <div class="reflection-form-group">
+                                <label>❌ Lo que salió mal y por qué</label>
+                                <textarea id="dailyPoorly" placeholder="¿Qué no funcionó? ¿Cuál fue la causa?"></textarea>
+                            </div>
+                            <div class="reflection-form-group">
+                                <label>🚀 Mejorar para mañana</label>
+                                <textarea id="dailyImprovement" placeholder="¿Qué cambiarías para mañana? Acciones concretas..."></textarea>
+                            </div>
+                            <div class="reflection-form-group">
+                                <button onclick="saveDailyReflection()">💾 Guardar reflexión diaria</button>
+                                <button onclick="clearDailyForm()">🗑️ Limpiar</button>
+                            </div>
                         </div>
 
-                        <div class="reflection-form-group">
-                            <label>Aspectos innecesarios</label>
-                            <textarea id="q3" placeholder="¿Qué eliminarías o simplificarías?"></textarea>
+                        <!-- FORMULARIO SEMANAL -->
+                        <div id="weeklyReflectionForm" style="display:none;">
+                            <div class="form-group">
+                                <label>Semana del</label>
+                                <input type="date" id="weeklyDate">
+                            </div>
+                            <div class="reflection-form-group">
+                                <label>📝 Resumen de la semana</label>
+                                <textarea id="weeklySummary" placeholder="¿Qué pasó esta semana? Puntos principales..."></textarea>
+                            </div>
+                            <div class="reflection-form-group">
+                                <label>✅ Lo que salió bien esta semana y por qué</label>
+                                <textarea id="weeklyWellDone" placeholder="¿Qué logros o momentos positivos tuviste?"></textarea>
+                            </div>
+                            <div class="reflection-form-group">
+                                <label>❌ Lo que salió mal esta semana y por qué</label>
+                                <textarea id="weeklyPoorly" placeholder="¿Qué desafíos o fracasos enfrentaste?"></textarea>
+                            </div>
+                            <div class="reflection-form-group">
+                                <label>🚀 Mejorar para la próxima semana</label>
+                                <textarea id="weeklyImprovement" placeholder="¿Qué cambios implementarás? Metas para la próxima semana..."></textarea>
+                            </div>
+                            <div class="reflection-form-group">
+                                <button onclick="saveWeeklyReflection()">💾 Guardar reflexión semanal</button>
+                                <button onclick="clearWeeklyForm()">🗑️ Limpiar</button>
+                            </div>
                         </div>
 
-                        <div class="reflection-form-group">
-                            <label>Mejoras a añadir (una por línea)</label>
-                            <textarea id="q4" placeholder="Añade sugerencias que se convertirán en tareas de mejora"></textarea>
+                        <!-- HISTÓRICO DE REFLEXIONES -->
+                        <div style="margin-top:20px; padding-top:16px; border-top:2px solid var(--border-color);">
+                            <h4 style="color:var(--accent-primary); margin-bottom:12px;">📚 Histórico de reflexiones</h4>
+                            <div id="reflectionHistory" class="empty-state">No hay reflexiones guardadas aún.</div>
                         </div>
 
-                        <div class="reflection-form-group">
-                            <label>Opinión general</label>
-                            <textarea id="q5" placeholder="Resumen general..."></textarea>
-                        </div>
-
-                        <div class="reflection-form-group">
-                            <button onclick="saveReflection()">💾 Guardar reflexión</button>
-                            <button onclick="clearReflection()">🗑️ Limpiar</button>
-                        </div>
-
-                        <div class="status-summary" id="reflectionStatus"></div>
-
-                        <!-- Tareas de mejora dentro del desplegable -->
+                        <!-- Tareas de mejora -->
                         <div class="improvements-section">
                             <h4>✨ Tareas de mejora</h4>
                             <div class="improvement-add">
@@ -1210,6 +1246,21 @@
             <div class="card">
                 <h2>✅ Tareas de Hoy</h2>
                 <div id="todayTasks" class="task-list"></div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: BOOK TRACKER (SOLO MODO PERSONAL) -->
+        <div id="bookTracker" class="section">
+            <div class="card">
+                <h2>📖 Book Tracker</h2>
+                <p class="doc-meta">Registra libros, entradas diarias de lectura, reflexiones, ideas clave y tareas aplicables. Visible solamente en modo personal.</p>
+
+                <div style="display:flex; gap:8px; margin-top:12px; margin-bottom:12px;">
+                    <button onclick="openAddBookModal()">➕ Añadir libro</button>
+                    <input id="bookSearch" placeholder="Buscar por título o autor" style="flex:1; padding:8px; border:2px solid var(--border-color); border-radius:8px;" oninput="renderBookTracker()">
+                </div>
+
+                <div id="bookList" class="task-list"></div>
             </div>
         </div>
 
@@ -1626,14 +1677,21 @@
             
             // Mostrar/ocultar pestaña de documentación
             const docTab = document.getElementById('docTab');
+            const bookTab = document.getElementById('bookTrackerTab');
             if (mode === 'personal') {
-                docTab.style.display = 'none';
+                if (docTab) docTab.style.display = 'none';
+                if (bookTab) bookTab.style.display = 'inline-block';
                 // Si estamos en documentación, volver a recopilar
                 if (document.getElementById('documentacion').classList.contains('active')) {
                     showSection('recopilar');
                 }
             } else {
-                docTab.style.display = 'block';
+                if (docTab) docTab.style.display = 'inline-block';
+                if (bookTab) bookTab.style.display = 'none';
+                // Si estamos en Book Tracker y cambiamos a escolar, volver a recopilar
+                if (document.getElementById('bookTracker') && document.getElementById('bookTracker').classList.contains('active')) {
+                    showSection('recopilar');
+                }
             }
             
             // Actualizar visualización si estamos en procesar
@@ -1667,6 +1725,7 @@
             if (sectionId === 'evaluar') renderEnhancedMetrics();
             if (sectionId === 'hacer') renderTodayTasks();
             if (sectionId === 'configuracion') renderAutomationsList();
+            if (sectionId === 'bookTracker') renderBookTracker();
             if (sectionId === 'documentacion') renderDocs();
         }
 
@@ -3179,61 +3238,183 @@
             try { return JSON.parse(raw); } catch(e){ return { reviewDay:1 }; }
         }
 
-        function saveReflection() {
-            const resp = {
-                q1: document.getElementById('q1').value.trim(),
-                q2: document.getElementById('q2').value.trim(),
-                q3: document.getElementById('q3').value.trim(),
-                q4: document.getElementById('q4').value.trim(),
-                q5: document.getElementById('q5').value.trim(),
-                date: new Date().toISOString()
-            };
-            localStorage.setItem('gtd_reflection_latest', JSON.stringify(resp));
+        // ========== KAIZEN SYSTEM FUNCTIONS ==========
+        let dailyReflections = [];
+        let weeklyReflections = [];
 
-            const lines = resp.q4.split('\n').map(l => l.trim()).filter(Boolean);
-            lines.forEach(l => addImprovement(l));
-            alert('Reflexión guardada y mejoras añadidas (si las hubo).');
-            renderEnhancedMetrics();
+        function loadKaizenReflections() {
+            try {
+                const raw = localStorage.getItem('gtd_kaizen_daily');
+                dailyReflections = raw ? JSON.parse(raw) : [];
+            } catch(e) { dailyReflections = []; }
+            try {
+                const raw = localStorage.getItem('gtd_kaizen_weekly');
+                weeklyReflections = raw ? JSON.parse(raw) : [];
+            } catch(e) { weeklyReflections = []; }
         }
 
-        function clearReflection() {
-            document.getElementById('q1').value = '';
-            document.getElementById('q2').value = '';
-            document.getElementById('q3').value = '';
-            document.getElementById('q4').value = '';
-            document.getElementById('q5').value = '';
+        function persistKaizenReflections() {
+            localStorage.setItem('gtd_kaizen_daily', JSON.stringify(dailyReflections));
+            localStorage.setItem('gtd_kaizen_weekly', JSON.stringify(weeklyReflections));
         }
 
-        function updateReflectionStatus() {
-            const latestRaw = localStorage.getItem('gtd_reflection_latest');
-            let txt = '';
-            if (!latestRaw) {
-                txt = 'No hay reflexiones guardadas todavía. Configura tu día de revisión semanal y realiza una reflexión.';
+        function switchKaizenTab(tab, event) {
+            event.preventDefault();
+            const dailyForm = document.getElementById('dailyReflectionForm');
+            const weeklyForm = document.getElementById('weeklyReflectionForm');
+            const dailyTab = document.getElementById('dailyReflectionTab');
+            const weeklyTab = document.getElementById('weeklyReflectionTab');
+
+            if (tab === 'daily') {
+                dailyForm.style.display = 'block';
+                weeklyForm.style.display = 'none';
+                dailyTab.classList.add('active');
+                weeklyTab.classList.remove('active');
+                if (!document.getElementById('dailyDate').value) {
+                    document.getElementById('dailyDate').value = new Date().toISOString().split('T')[0];
+                }
             } else {
-                try {
-                    const obj = JSON.parse(latestRaw);
-                    txt = `Última reflexión: ${new Date(obj.date).toLocaleString()}<br>`;
-                    txt += `📌 <strong>Mejoras sugeridas:</strong> ${obj.q4 || 'ninguna'}<br>`;
-                    txt += `⛔ <strong>Cosas innecesarias:</strong> ${obj.q3 || 'ninguna'}<br>`;
-                    txt += `💭 <strong>Resumen:</strong> "${(obj.q5||'sin resumen').slice(0,120)}"}`;
-                } catch(e) {
-                    txt = 'Estado de reflexión no disponible.';
+                dailyForm.style.display = 'none';
+                weeklyForm.style.display = 'block';
+                dailyTab.classList.remove('active');
+                weeklyTab.classList.add('active');
+                if (!document.getElementById('weeklyDate').value) {
+                    document.getElementById('weeklyDate').value = new Date().toISOString().split('T')[0];
                 }
             }
-
-            const improvements = loadImprovements();
-            const pending = improvements.filter(i => !i.done).length;
-            const completed = improvements.filter(i => i.done).length;
-            txt += `<br>📊 Mejoras: ${completed} completadas, ${pending} pendientes.`;
-            document.getElementById('reflectionStatus').innerHTML = txt;
+            renderKaizenHistory();
         }
 
-        function toggleReflectionPanel(event) {
+        function saveDailyReflection() {
+            const date = document.getElementById('dailyDate').value;
+            if (!date) { alert('Selecciona una fecha'); return; }
+            const summary = document.getElementById('dailySummary').value.trim();
+            const wellDone = document.getElementById('dailyWellDone').value.trim();
+            const poorly = document.getElementById('dailyPoorly').value.trim();
+            const improvement = document.getElementById('dailyImprovement').value.trim();
+
+            const idx = dailyReflections.findIndex(r => r.date === date);
+            const entry = { date, summary, wellDone, poorly, improvement, savedAt: new Date().toISOString() };
+            if (idx !== -1) {
+                dailyReflections[idx] = entry;
+            } else {
+                dailyReflections.push(entry);
+            }
+            persistKaizenReflections();
+            alert('✅ Reflexión diaria guardada');
+            clearDailyForm();
+            renderKaizenHistory();
+        }
+
+        function saveWeeklyReflection() {
+            const date = document.getElementById('weeklyDate').value;
+            if (!date) { alert('Selecciona una fecha'); return; }
+            const summary = document.getElementById('weeklySummary').value.trim();
+            const wellDone = document.getElementById('weeklyWellDone').value.trim();
+            const poorly = document.getElementById('weeklyPoorly').value.trim();
+            const improvement = document.getElementById('weeklyImprovement').value.trim();
+
+            const idx = weeklyReflections.findIndex(r => r.date === date);
+            const entry = { date, summary, wellDone, poorly, improvement, savedAt: new Date().toISOString() };
+            if (idx !== -1) {
+                weeklyReflections[idx] = entry;
+            } else {
+                weeklyReflections.push(entry);
+            }
+            persistKaizenReflections();
+            alert('✅ Reflexión semanal guardada');
+            clearWeeklyForm();
+            renderKaizenHistory();
+        }
+
+        function clearDailyForm() {
+            document.getElementById('dailySummary').value = '';
+            document.getElementById('dailyWellDone').value = '';
+            document.getElementById('dailyPoorly').value = '';
+            document.getElementById('dailyImprovement').value = '';
+        }
+
+        function clearWeeklyForm() {
+            document.getElementById('weeklySummary').value = '';
+            document.getElementById('weeklyWellDone').value = '';
+            document.getElementById('weeklyPoorly').value = '';
+            document.getElementById('weeklyImprovement').value = '';
+        }
+
+        function renderKaizenHistory() {
+            loadKaizenReflections();
+            const container = document.getElementById('reflectionHistory');
+            const activeTab = document.getElementById('dailyReflectionForm').style.display === 'block' ? 'daily' : 'weekly';
+            const reflections = activeTab === 'daily' ? dailyReflections : weeklyReflections;
+
+            if (reflections.length === 0) {
+                container.innerHTML = '<div class="empty-state">No hay ' + (activeTab === 'daily' ? 'reflexiones diarias' : 'reflexiones semanales') + ' guardadas aún.</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            reflections.slice().reverse().forEach((r, idx) => {
+                const div = document.createElement('div');
+                div.style.marginBottom = '12px';
+                div.style.padding = '12px';
+                div.style.border = '1px solid var(--border-color)';
+                div.style.borderRadius = '8px';
+                div.style.backgroundColor = 'var(--bg-secondary)';
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <div style="font-weight:600; color:var(--accent-primary);">${escapeHtml(r.date)}</div>
+                        <button class="btn-small btn-danger" onclick="deleteKaizenReflection('${activeTab}', ${reflections.length-idx-1})">🗑️</button>
+                    </div>
+                    <div style="margin-bottom:8px;">
+                        <strong>Resumen:</strong><br>
+                        <div style="white-space:pre-wrap; color:var(--text-secondary);">${escapeHtml(r.summary)}</div>
+                    </div>
+                    <div style="margin-bottom:8px;">
+                        <strong>✅ Lo que salió bien:</strong><br>
+                        <div style="white-space:pre-wrap; color:var(--text-secondary);">${escapeHtml(r.wellDone)}</div>
+                    </div>
+                    <div style="margin-bottom:8px;">
+                        <strong>❌ Lo que salió mal:</strong><br>
+                        <div style="white-space:pre-wrap; color:var(--text-secondary);">${escapeHtml(r.poorly)}</div>
+                    </div>
+                    <div>
+                        <strong>🚀 Mejorar:</strong><br>
+                        <div style="white-space:pre-wrap; color:var(--text-secondary);">${escapeHtml(r.improvement)}</div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function deleteKaizenReflection(type, idx) {
+            if (!confirm('Eliminar esta reflexión?')) return;
+            if (type === 'daily') {
+                dailyReflections.splice(idx, 1);
+            } else {
+                weeklyReflections.splice(idx, 1);
+            }
+            persistKaizenReflections();
+            renderKaizenHistory();
+        }
+
+        function toggleKaizenPanel(event) {
             const btn = event.currentTarget;
-            const content = document.getElementById('reflectionContent');
+            const content = document.getElementById('kaizenContent');
             btn.classList.toggle('collapsed');
             btn.classList.toggle('expanded');
             content.classList.toggle('active');
+            if (content.classList.contains('active')) {
+                loadKaizenReflections();
+                renderKaizenHistory();
+                if (!document.getElementById('dailyDate').value) {
+                    document.getElementById('dailyDate').value = new Date().toISOString().split('T')[0];
+                }
+            }
+        }
+
+        // Stub para compatibilidad (updateReflectionStatus ya no existe)
+        function updateReflectionStatus() {
+            // Función heredada -  ahora obsoleta. Mantenida para compatibilidad.
         }
 
         // ========== MEJORAS (LOCAL STORAGE) ==========
@@ -3603,8 +3784,294 @@
         renderInbox();
         renderCalendar();
         loadReflectionConfig();
+        loadKaizenReflections();
         loadImprovements();
         renderEnhancedMetrics();
+    </script>
+
+    <!-- MODAL: Añadir/Editar Libro (Book Tracker) -->
+    <div id="bookModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="bookModalTitle">Añadir libro</h2>
+                <button class="modal-close" onclick="closeBookModal()">✕</button>
+            </div>
+            <div class="form-group">
+                <label>Título</label>
+                <input id="bookTitle">
+            </div>
+            <div class="form-group">
+                <label>Autor</label>
+                <input id="bookAuthor">
+            </div>
+            <div class="form-group">
+                <label>Fecha inicio</label>
+                <input type="date" id="bookStart">
+            </div>
+            <div class="form-group">
+                <label>Fecha fin (opcional)</label>
+                <input type="date" id="bookEnd">
+            </div>
+            <div style="display:flex; gap:8px; margin-top:12px;">
+                <button onclick="saveBook()">💾 Guardar libro</button>
+                <button class="btn-danger" onclick="closeBookModal()">✕ Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Añadir/Editar Entrada de Lectura -->
+    <div id="entryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="entryModalTitle">Añadir entrada</h2>
+                <button class="modal-close" onclick="closeEntryModal()">✕</button>
+            </div>
+            <input type="hidden" id="entryBookId">
+            <input type="hidden" id="entryIndex">
+            <div class="form-group">
+                <label>Fecha</label>
+                <input type="date" id="entryDate">
+            </div>
+            <div class="form-group">
+                <label>Reflexión / Resumen</label>
+                <textarea id="entryReflection"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Ideas clave (una por línea)</label>
+                <textarea id="entryIdeas" placeholder="Una idea por línea"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Ideas aplicables / To-Do (una por línea)</label>
+                <textarea id="entryTodos" placeholder="Una idea aplicable por línea"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Evaluación general</label>
+                <select id="entryRating">
+                    <option value="">-- Selecciona --</option>
+                    <option value="5">Excelente</option>
+                    <option value="4">Muy bueno</option>
+                    <option value="3">Bueno</option>
+                    <option value="2">Regular</option>
+                    <option value="1">Pobre</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Lo más importante aprendido</label>
+                <textarea id="entryMain"></textarea>
+            </div>
+
+            <div style="display:flex; gap:8px; margin-top:12px;">
+                <button onclick="saveEntry()">💾 Guardar entrada</button>
+                <button class="btn-danger" onclick="closeEntryModal()">✕ Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Book Tracker data
+        let books = [];
+
+        function loadBooks() {
+            try {
+                const raw = localStorage.getItem('gtd_books');
+                books = raw ? JSON.parse(raw) : [];
+            } catch(e) { books = []; }
+        }
+
+        function persistBooks() {
+            localStorage.setItem('gtd_books', JSON.stringify(books));
+        }
+
+        function openAddBookModal() {
+            document.getElementById('bookModalTitle').textContent = 'Añadir libro';
+            document.getElementById('bookTitle').value = '';
+            document.getElementById('bookAuthor').value = '';
+            document.getElementById('bookStart').value = new Date().toISOString().split('T')[0];
+            document.getElementById('bookEnd').value = '';
+            document.getElementById('bookModal').classList.add('active');
+            document.getElementById('bookModal').dataset.editId = '';
+        }
+
+        function closeBookModal() { document.getElementById('bookModal').classList.remove('active'); }
+
+        function saveBook() {
+            const title = document.getElementById('bookTitle').value.trim();
+            if (!title) { alert('Añade un título'); return; }
+            const author = document.getElementById('bookAuthor').value.trim();
+            const start = document.getElementById('bookStart').value || null;
+            const end = document.getElementById('bookEnd').value || null;
+            const editId = document.getElementById('bookModal').dataset.editId;
+            if (editId) {
+                const idx = books.findIndex(b=>b.id==editId);
+                if (idx>-1) { books[idx] = { ...books[idx], title, author, start, end }; }
+            } else {
+                books.push({ id: Date.now()+Math.floor(Math.random()*999), title, author, start, end, entries: [] });
+            }
+            persistBooks();
+            closeBookModal();
+            renderBookTracker();
+        }
+
+        function openEditBook(id) {
+            const b = books.find(x=>x.id==id); if(!b) return;
+            document.getElementById('bookModalTitle').textContent = 'Editar libro';
+            document.getElementById('bookTitle').value = b.title;
+            document.getElementById('bookAuthor').value = b.author || '';
+            document.getElementById('bookStart').value = b.start || '';
+            document.getElementById('bookEnd').value = b.end || '';
+            document.getElementById('bookModal').dataset.editId = b.id;
+            document.getElementById('bookModal').classList.add('active');
+        }
+
+        function deleteBook(id) {
+            if (!confirm('Eliminar este libro y todas sus entradas?')) return;
+            books = books.filter(b=>b.id!=id);
+            persistBooks();
+            renderBookTracker();
+        }
+
+        function renderBookTracker() {
+            loadBooks();
+            const container = document.getElementById('bookList');
+            const q = (document.getElementById('bookSearch')?.value || '').toLowerCase();
+            container.innerHTML = '';
+            const list = books.filter(b => !q || b.title.toLowerCase().includes(q) || (b.author||'').toLowerCase().includes(q));
+            if (list.length === 0) { container.innerHTML = '<div class="empty-state">No hay libros registrados.</div>'; return; }
+            list.forEach(b => {
+                const div = document.createElement('div');
+                div.className = 'task-item';
+                div.innerHTML = `
+                    <div style="flex:1">
+                        <div style="font-weight:700">${escapeHtml(b.title)}${b.author? ' — '+escapeHtml(b.author):''}</div>
+                        <div class="doc-meta">${b.start || ''}${b.end? ' → '+b.end: ''} · ${b.entries?.length||0} entradas</div>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button onclick="openAddEntryModal(${b.id})">➕ Entrada</button>
+                        <button onclick="toggleEntries(${b.id}, this)">Ver entradas</button>
+                        <button onclick="openEditBook(${b.id})">✏️</button>
+                        <button class="btn-danger" onclick="deleteBook(${b.id})">🗑️</button>
+                    </div>
+                `;
+                container.appendChild(div);
+
+                const entriesDiv = document.createElement('div');
+                entriesDiv.id = 'entries-'+b.id;
+                entriesDiv.style.display = 'none';
+                entriesDiv.style.marginTop = '8px';
+                entriesDiv.style.padding = '8px';
+                entriesDiv.style.borderTop = '1px dashed var(--border-color)';
+                // render existing entries
+                if (b.entries && b.entries.length) {
+                    b.entries.slice().reverse().forEach((e, idx) => {
+                        const ed = document.createElement('div');
+                        ed.style.padding = '8px';
+                        ed.style.border = '1px solid var(--border-color)';
+                        ed.style.borderRadius = '6px';
+                        ed.style.marginBottom = '8px';
+                        ed.innerHTML = `
+                            <div style="display:flex; justify-content:space-between; gap:8px; align-items:flex-start;">
+                                <div style="flex:1">
+                                    <div style="font-weight:600">${escapeHtml(e.date)}</div>
+                                    <div style="color:var(--text-secondary); margin-top:6px; white-space:pre-wrap">${escapeHtml(e.reflection || '')}</div>
+                                    <div style="margin-top:6px"><strong>Ideas clave:</strong><br>${(e.ideas||[]).map(i=>'<div>- '+escapeHtml(i)+'</div>').join('')}</div>
+                                    <div style="margin-top:6px"><strong>Ideas aplicables:</strong><br>${(e.todos||[]).map(t=>'<div>- '+escapeHtml(t)+'</div>').join('')}</div>
+                                    <div style="margin-top:6px"><strong>Evaluación:</strong> ${escapeHtml(e.rating||'')}</div>
+                                    <div style="margin-top:6px"><strong>Lo más importante:</strong><br>${escapeHtml(e.main||'')}</div>
+                                </div>
+                                <div style="display:flex; flex-direction:column; gap:6px;">
+                                    <button onclick="editEntry(${b.id}, ${b.entries.indexOf(e)})">✏️</button>
+                                    <button class="btn-danger" onclick="deleteEntry(${b.id}, ${b.entries.indexOf(e)})">🗑️</button>
+                                </div>
+                            </div>
+                        `;
+                        entriesDiv.appendChild(ed);
+                    });
+                } else {
+                    entriesDiv.innerHTML = '<div class="empty-state">No hay entradas para este libro.</div>';
+                }
+                container.appendChild(entriesDiv);
+            });
+        }
+
+        function toggleEntries(bookId, btn) {
+            const el = document.getElementById('entries-'+bookId);
+            if (!el) return;
+            el.style.display = el.style.display === 'none' ? 'block' : 'none';
+            btn.textContent = el.style.display === 'none' ? 'Ver entradas' : 'Ocultar entradas';
+        }
+
+        function openAddEntryModal(bookId) {
+            const b = books.find(x=>x.id==bookId); if(!b) return;
+            document.getElementById('entryModalTitle').textContent = 'Añadir entrada — '+b.title;
+            document.getElementById('entryBookId').value = bookId;
+            document.getElementById('entryIndex').value = '';
+            document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('entryReflection').value = '';
+            document.getElementById('entryIdeas').value = '';
+            document.getElementById('entryTodos').value = '';
+            document.getElementById('entryRating').value = '';
+            document.getElementById('entryMain').value = '';
+            document.getElementById('entryModal').classList.add('active');
+        }
+
+        function closeEntryModal() { document.getElementById('entryModal').classList.remove('active'); }
+
+        function saveEntry() {
+            const bookId = parseInt(document.getElementById('entryBookId').value,10);
+            const idx = document.getElementById('entryIndex').value;
+            const date = document.getElementById('entryDate').value;
+            if (!date) { alert('Selecciona una fecha'); return; }
+            const reflection = document.getElementById('entryReflection').value.trim();
+            const ideas = document.getElementById('entryIdeas').value.split('\n').map(s=>s.trim()).filter(Boolean);
+            const todos = document.getElementById('entryTodos').value.split('\n').map(s=>s.trim()).filter(Boolean);
+            const rating = document.getElementById('entryRating').value;
+            const main = document.getElementById('entryMain').value.trim();
+            const bIdx = books.findIndex(b=>b.id==bookId);
+            if (bIdx === -1) return;
+            const entry = { date, reflection, ideas, todos, rating, main };
+            if (idx !== '') {
+                books[bIdx].entries[idx] = entry;
+            } else {
+                books[bIdx].entries = books[bIdx].entries || [];
+                books[bIdx].entries.push(entry);
+            }
+            persistBooks();
+            closeEntryModal();
+            renderBookTracker();
+        }
+
+        function editEntry(bookId, entryIndex) {
+            const b = books.find(x=>x.id==bookId); if(!b) return;
+            const e = b.entries[entryIndex]; if(!e) return;
+            document.getElementById('entryModalTitle').textContent = 'Editar entrada — '+b.title;
+            document.getElementById('entryBookId').value = bookId;
+            document.getElementById('entryIndex').value = entryIndex;
+            document.getElementById('entryDate').value = e.date;
+            document.getElementById('entryReflection').value = e.reflection || '';
+            document.getElementById('entryIdeas').value = (e.ideas||[]).join('\n');
+            document.getElementById('entryTodos').value = (e.todos||[]).join('\n');
+            document.getElementById('entryRating').value = e.rating || '';
+            document.getElementById('entryMain').value = e.main || '';
+            document.getElementById('entryModal').classList.add('active');
+        }
+
+        function deleteEntry(bookId, entryIndex) {
+            if (!confirm('Eliminar esta entrada?')) return;
+            const b = books.find(x=>x.id==bookId); if(!b) return;
+            b.entries.splice(entryIndex,1);
+            persistBooks();
+            renderBookTracker();
+        }
+
+        // Initialize Book Tracker on load
+        loadBooks();
+        renderBookTracker();
+
+        // Ensure Book Tracker visibility reflects current mode at startup
+        (function(){
+            const bookTab = document.getElementById('bookTrackerTab');
+            if (bookTab) bookTab.style.display = currentMode === 'personal' ? 'inline-block' : 'none';
+        })();
     </script>
 </body>
 </html>
