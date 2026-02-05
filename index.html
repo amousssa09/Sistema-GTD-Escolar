@@ -916,58 +916,95 @@
         .doc-meta { color: var(--text-secondary); font-size:0.9rem; }
         .doc-actions { display:flex; gap:8px; align-items:center; }
 
-        /* ========== MODAL AUTOMATIZACIÓN ========== */
-        .automation-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-bottom: 20px;
-        }
-
-        .automation-section {
+        /* ====== Estilos para Automatización ====== */
+        .automation-list {
+            margin-top: 12px;
             display: flex;
             flex-direction: column;
+            gap: 10px;
+        }
+
+        .automation-item {
+            background-color: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
             gap: 12px;
         }
 
-        .weekdays-selector {
+        .automation-info {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .automation-info-row {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .automation-info-row strong {
+            color: var(--text-primary);
+        }
+
+        .automation-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .automation-days {
+            display: flex;
+            gap: 3px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .day-badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            background-color: var(--accent-primary);
+            color: white;
+        }
+
+        .weekday-selector {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 8px;
-            margin-top: 8px;
+            margin: 12px 0;
         }
 
-        .weekday-btn {
-            padding: 10px 8px;
-            border: 2px solid var(--border-color);
-            background-color: var(--bg-secondary);
-            color: var(--text-primary);
-            border-radius: 8px;
+        .weekday-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .weekday-checkbox input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .weekday-checkbox label {
+            margin: 0;
             cursor: pointer;
             font-weight: 500;
-            transition: all 0.3s;
-            font-size: 0.9rem;
         }
 
-        .weekday-btn:hover {
-            border-color: var(--accent-primary);
+        /* ========== BLOQUES ALTERNATIVOS ========== */
+        .event-block.alternative {
+            background-color: #16a085;
         }
 
-        .weekday-btn.selected {
-            background-color: var(--accent-primary);
-            color: white;
-            border-color: var(--accent-primary);
-        }
-
-        .automation-preview {
-            padding: 12px;
-            background-color: rgba(52, 152, 219, 0.05);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            max-height: 150px;
-            overflow-y: auto;
+        .event-block.alternative:hover {
+            background-color: #138d75;
         }
     </style>
 </head>
@@ -1195,6 +1232,16 @@
                     <p><strong>Nota:</strong> La importación sobrescribirá el estado actual. Asegúrate de guardar antes si lo necesitas.</p>
                 </div>
             </div>
+
+            <div class="card">
+                <h2>⏰ Gestión de Automatizaciones</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                    Aquí puedes ver, editar, pausar o eliminar todas tus automatizaciones de tareas y hábitos.
+                </p>
+                <div id="automationsListContainer" class="automation-list">
+                    <div class="empty-state">No hay automatizaciones configuradas</div>
+                </div>
+            </div>
         </div>
 
         <!-- SECCIÓN: DOCUMENTACIÓN (SOLO MODO ESCOLAR) -->
@@ -1376,88 +1423,175 @@
         </div>
     </div>
 
-    <!-- MODAL PARA AUTOMATIZACIÓN -->
+    <!-- MODAL PARA CREAR BLOQUES ALTERNATIVOS -->
+    <div id="alternativeBlockModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Crear Bloque Alternativo</h2>
+                <button class="modal-close" onclick="closeModal('alternativeBlockModal')">✕ Cerrar</button>
+            </div>
+            
+            <div class="form-group">
+                <label>Nombre del bloque</label>
+                <input type="text" id="blockName" placeholder="Ej: Descanso, Reunión, Ejercicio...">
+            </div>
+
+            <div class="form-group">
+                <label>¿Solo para este día?</label>
+                <div class="action-buttons">
+                    <button class="btn-action" onclick="showBlockSingleDay()">Sí, solo hoy</button>
+                    <button class="btn-action" onclick="showBlockAutomation()">No, automatizar</button>
+                </div>
+            </div>
+
+            <div id="blockSingleForm" style="display: none; margin-top: 20px;">
+                <div class="form-group">
+                    <label>Hora de inicio</label>
+                    <input type="time" id="blockTimeStart" value="12:00">
+                </div>
+                <div class="form-group">
+                    <label>Hora de fin</label>
+                    <input type="time" id="blockTimeEnd" value="13:00">
+                </div>
+                <button onclick="createSingleBlock()" style="width: 100%;">✅ Crear Bloque</button>
+            </div>
+
+            <div id="blockAutomationForm" style="display: none; margin-top: 20px;">
+                <div class="form-group">
+                    <label>Hora de inicio</label>
+                    <input type="time" id="blockAutoTimeStart" value="12:00">
+                </div>
+                <div class="form-group">
+                    <label>Hora de fin</label>
+                    <input type="time" id="blockAutoTimeEnd" value="13:00">
+                </div>
+                <div class="form-group">
+                    <label>Fecha de inicio</label>
+                    <input type="date" id="blockAutoStartDate">
+                </div>
+                <div class="form-group">
+                    <label>Fecha de fin</label>
+                    <input type="date" id="blockAutoEndDate">
+                </div>
+                <div class="form-group">
+                    <label>Selecciona los días de la semana</label>
+                    <div class="weekday-selector">
+                        <div class="weekday-checkbox">
+                            <input type="checkbox" id="block-weekday-1" checked>
+                            <label for="block-weekday-1">Lun</label>
+                        </div>
+                        <div class="weekday-checkbox">
+                            <input type="checkbox" id="block-weekday-2" checked>
+                            <label for="block-weekday-2">Mar</label>
+                        </div>
+                        <div class="weekday-checkbox">
+                            <input type="checkbox" id="block-weekday-3" checked>
+                            <label for="block-weekday-3">Mié</label>
+                        </div>
+                        <div class="weekday-checkbox">
+                            <input type="checkbox" id="block-weekday-4" checked>
+                            <label for="block-weekday-4">Jue</label>
+                        </div>
+                        <div class="weekday-checkbox">
+                            <input type="checkbox" id="block-weekday-5" checked>
+                            <label for="block-weekday-5">Vie</label>
+                        </div>
+                        <div class="weekday-checkbox">
+                            <input type="checkbox" id="block-weekday-6">
+                            <label for="block-weekday-6">Sáb</label>
+                        </div>
+                        <div class="weekday-checkbox">
+                            <input type="checkbox" id="block-weekday-0">
+                            <label for="block-weekday-0">Dom</label>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="createAutomatedBlock()" style="width: 100%; margin-top: 20px;">✅ Crear Automatización</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PARA AUTOMATIZAR TAREAS/HÁBITOS -->
     <div id="automationModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>⚙️ Automatizar Elemento</h2>
+                <h2>Automatizar Tarea/Hábito</h2>
                 <button class="modal-close" onclick="closeModal('automationModal')">✕ Cerrar</button>
             </div>
+            
+            <div class="form-group">
+                <label><strong>Nombre:</strong></label>
+                <p id="automationItemName" style="color: var(--text-secondary);"></p>
+            </div>
 
             <div class="form-group">
-                <label><strong>Tipo de elemento:</strong></label>
-                <div id="automationTypeDisplay" style="padding: 8px; background-color: var(--bg-secondary); border-radius: 8px; color: var(--accent-primary); font-weight: 600;"></div>
+                <label>Tipo</label>
+                <select id="automationType" onchange="updateAutomationTypeFields()">
+                    <option value="tarea">Tarea (Escolar/Personal)</option>
+                    <option value="habit">Hábito (Personal)</option>
+                </select>
             </div>
 
-            <div class="automation-grid">
-                <!-- Rango de fechas -->
-                <div class="automation-section">
-                    <label style="font-weight: 600; color: var(--accent-primary);">📅 Rango de Fechas</label>
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label style="font-size: 0.9rem;">Fecha inicio</label>
-                        <input type="date" id="autoStartDate">
-                    </div>
-                    <div class="form-group">
-                        <label style="font-size: 0.9rem;">Fecha fin</label>
-                        <input type="date" id="autoEndDate">
-                    </div>
-                </div>
-
-                <!-- Días de la semana -->
-                <div class="automation-section">
-                    <label style="font-weight: 600; color: var(--accent-primary);">📆 Días de la Semana</label>
-                    <div class="weekdays-selector" id="weekdaysSelector">
-                        <button class="weekday-btn" data-day="1" onclick="toggleWeekday(event)">Lun</button>
-                        <button class="weekday-btn" data-day="2" onclick="toggleWeekday(event)">Mar</button>
-                        <button class="weekday-btn" data-day="3" onclick="toggleWeekday(event)">Mié</button>
-                        <button class="weekday-btn" data-day="4" onclick="toggleWeekday(event)">Jue</button>
-                        <button class="weekday-btn" data-day="5" onclick="toggleWeekday(event)">Vie</button>
-                        <button class="weekday-btn" data-day="6" onclick="toggleWeekday(event)">Sáb</button>
-                        <button class="weekday-btn" data-day="0" onclick="toggleWeekday(event)">Dom</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Configuración de horarios (tarea) -->
-            <div id="autoTaskTimeConfig" style="display: none; padding: 16px; background-color: rgba(0,0,0,0.02); border-radius: 8px; margin-bottom: 16px;">
-                <label style="font-weight: 600; color: var(--accent-primary); display: block; margin-bottom: 12px;">⏰ Horario (Tarea)</label>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label style="font-size: 0.9rem;">Hora inicio</label>
-                        <input type="time" id="autoTaskTimeStart" value="09:00">
-                    </div>
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label style="font-size: 0.9rem;">Hora fin</label>
-                        <input type="time" id="autoTaskTimeEnd" value="10:00">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Configuración de horarios (hábito) -->
-            <div id="autoHabitTimeConfig" style="display: none; padding: 16px; background-color: rgba(0,0,0,0.02); border-radius: 8px; margin-bottom: 16px;">
-                <label style="font-weight: 600; color: var(--accent-primary); display: block; margin-bottom: 12px;">⏰ Horario (Hábito)</label>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label style="font-size: 0.9rem;">Hora inicio</label>
-                        <input type="time" id="autoHabitTimeStart" value="09:00">
-                    </div>
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label style="font-size: 0.9rem;">Duración (minutos)</label>
-                        <input type="number" id="autoHabitDuration" min="1" value="30">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Preview -->
             <div class="form-group">
-                <label style="font-weight: 600;">📋 Vista previa (primeras 10 fechas):</label>
-                <div class="automation-preview" id="autoPreview">
-                    Selecciona fechas y días para ver la vista previa
+                <label>Fecha de inicio</label>
+                <input type="date" id="automationStartDate">
+            </div>
+
+            <div class="form-group">
+                <label>Fecha de fin</label>
+                <input type="date" id="automationEndDate">
+            </div>
+
+            <div class="form-group">
+                <label>Hora de inicio</label>
+                <input type="time" id="automationTimeStart" value="09:00">
+            </div>
+
+            <div class="form-group" id="automationTimeDurationGroup">
+                <label>Duración (minutos)</label>
+                <input type="number" id="automationDuration" value="60" min="5" step="5">
+            </div>
+
+            <div class="form-group" id="automationTimeEndGroup" style="display: none;">
+                <label>Hora de fin</label>
+                <input type="time" id="automationTimeEnd" value="10:00">
+            </div>
+
+            <div class="form-group">
+                <label>Selecciona los días de la semana</label>
+                <div class="weekday-selector">
+                    <div class="weekday-checkbox">
+                        <input type="checkbox" id="weekday-1" checked>
+                        <label for="weekday-1">Lun</label>
+                    </div>
+                    <div class="weekday-checkbox">
+                        <input type="checkbox" id="weekday-2" checked>
+                        <label for="weekday-2">Mar</label>
+                    </div>
+                    <div class="weekday-checkbox">
+                        <input type="checkbox" id="weekday-3" checked>
+                        <label for="weekday-3">Mié</label>
+                    </div>
+                    <div class="weekday-checkbox">
+                        <input type="checkbox" id="weekday-4" checked>
+                        <label for="weekday-4">Jue</label>
+                    </div>
+                    <div class="weekday-checkbox">
+                        <input type="checkbox" id="weekday-5" checked>
+                        <label for="weekday-5">Vie</label>
+                    </div>
+                    <div class="weekday-checkbox">
+                        <input type="checkbox" id="weekday-6">
+                        <label for="weekday-6">Sáb</label>
+                    </div>
+                    <div class="weekday-checkbox">
+                        <input type="checkbox" id="weekday-0">
+                        <label for="weekday-0">Dom</label>
+                    </div>
                 </div>
             </div>
 
-            <!-- Botón de confirmar -->
-            <button onclick="confirmAutomation()" style="width: 100%; margin-top: 16px;">
+            <button onclick="saveAutomation()" style="margin-top: 20px; width: 100%;">
                 ✅ Crear Automatización
             </button>
         </div>
@@ -1476,6 +1610,11 @@
         let currentDocCategory = 'apuntes';
         let currentPreviewDocId = null;
         let currentMode = 'escolar'; // 'escolar' o 'personal'
+        let automations = []; // Array para almacenar automatizaciones
+        let currentAutomationItem = null; // Item en proceso para automatización
+        let alternativeBlocks = []; // Array para almacenar bloques alternativos
+        let blockAutomations = []; // Array para almacenar automatizaciones de bloques
+        let currentBlockData = null; // Datos del bloque en creación
 
         // ========== MODO (ESCOLAR/PERSONAL) ==========
         function switchMode(mode) {
@@ -1527,6 +1666,7 @@
             if (sectionId === 'organizar') renderCalendar();
             if (sectionId === 'evaluar') renderEnhancedMetrics();
             if (sectionId === 'hacer') renderTodayTasks();
+            if (sectionId === 'configuracion') renderAutomationsList();
             if (sectionId === 'documentacion') renderDocs();
         }
 
@@ -1567,7 +1707,9 @@
                         </span>
                     </div>
                     <div style="display: flex; gap: 8px;">
-                        <button class="btn-small" onclick="openAutomationModal(${item.id})" style="background-color: #9b59b6; color: white;">⚙️ Automatizar</button>
+                        <button class="btn-small btn-success" onclick="openAutomationModal(${item.id}, '${escapeHtml(item.text)}', '${item.mode}')">
+                            ⚙️ Automatizar
+                        </button>
                         <button class="btn-small btn-danger" onclick="deleteInboxItem(${item.id})">
                             🗑️ Eliminar
                         </button>
@@ -1580,6 +1722,346 @@
             inbox = inbox.filter(item => item.id !== id);
             renderInbox();
             persistData();
+        }
+
+        // ========== AUTOMATIZACIÓN (NUEVA FUNCIONALIDAD) ==========
+        function openAutomationModal(itemId, itemText, itemMode) {
+            currentAutomationItem = { id: itemId, text: itemText, mode: itemMode };
+            document.getElementById('automationItemName').textContent = itemText;
+            
+            // Establecer tipo basado en modo
+            const typeSelect = document.getElementById('automationType');
+            if (itemMode === 'personal') {
+                typeSelect.value = 'habit';
+            } else {
+                typeSelect.value = 'tarea';
+            }
+            
+            // Establecer fechas por defecto
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('automationStartDate').value = today;
+            
+            const endDate = new Date();
+            endDate.setDate(endDate.getDate() + 30);
+            document.getElementById('automationEndDate').value = endDate.toISOString().split('T')[0];
+            
+            // Reset checkboxes
+            for (let i = 0; i <= 6; i++) {
+                const checkbox = document.getElementById(`weekday-${i}`);
+                checkbox.checked = i >= 1 && i <= 5; // Lunes a viernes por defecto
+            }
+            
+            updateAutomationTypeFields();
+            openModal('automationModal');
+        }
+
+        function updateAutomationTypeFields() {
+            const type = document.getElementById('automationType').value;
+            const durationGroup = document.getElementById('automationTimeDurationGroup');
+            const endTimeGroup = document.getElementById('automationTimeEndGroup');
+            
+            if (type === 'habit') {
+                // Para hábitos: mostrar duración
+                durationGroup.style.display = 'block';
+                endTimeGroup.style.display = 'none';
+            } else {
+                // Para tareas: mostrar hora de fin
+                durationGroup.style.display = 'none';
+                endTimeGroup.style.display = 'block';
+            }
+        }
+
+        function saveAutomation() {
+            if (!currentAutomationItem) return;
+            
+            const startDate = document.getElementById('automationStartDate').value;
+            const endDate = document.getElementById('automationEndDate').value;
+            const timeStart = document.getElementById('automationTimeStart').value;
+            const type = document.getElementById('automationType').value;
+            
+            if (!startDate || !endDate || !timeStart) {
+                alert('Por favor completa todos los campos requeridos');
+                return;
+            }
+            
+            // Obtener días seleccionados
+            const selectedDays = [];
+            for (let i = 0; i <= 6; i++) {
+                if (document.getElementById(`weekday-${i}`).checked) {
+                    selectedDays.push(i);
+                }
+            }
+            
+            if (selectedDays.length === 0) {
+                alert('Selecciona al menos un día de la semana');
+                return;
+            }
+            
+            let timeEnd = null;
+            let duration = null;
+            
+            if (type === 'habit') {
+                duration = parseInt(document.getElementById('automationDuration').value);
+                if (!duration || duration < 5) {
+                    alert('La duración debe ser mínimo 5 minutos');
+                    return;
+                }
+            } else {
+                timeEnd = document.getElementById('automationTimeEnd').value;
+                if (!timeEnd) {
+                    alert('Especifica la hora de fin para tareas');
+                    return;
+                }
+            }
+            
+            const automation = {
+                id: Date.now(),
+                inboxItemId: currentAutomationItem.id,
+                itemText: currentAutomationItem.text,
+                itemMode: currentAutomationItem.mode,
+                type: type,
+                startDate: startDate,
+                endDate: endDate,
+                timeStart: timeStart,
+                timeEnd: timeEnd,
+                duration: duration,
+                selectedDays: selectedDays,
+                isActive: true,
+                createdAt: new Date().toISOString()
+            };
+            
+            automations.push(automation);
+            persistData();
+            
+            // Ejecutar automatización inmediatamente
+            executeAutomation(automation);
+            
+            closeModal('automationModal');
+            alert(`✅ Automatización creada. Se generarán eventos entre ${startDate} y ${endDate}`);
+            renderInbox();
+        }
+
+        function executeAutomation(automation) {
+            const startDate = new Date(automation.startDate);
+            const endDate = new Date(automation.endDate);
+            
+            // Generar eventos para cada día en el rango que coincida con los días seleccionados
+            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                const dayOfWeek = d.getDay();
+                
+                if (automation.selectedDays.includes(dayOfWeek)) {
+                    const dateStr = d.toISOString().split('T')[0];
+                    
+                    let timeEnd = automation.timeEnd;
+                    if (!timeEnd && automation.duration) {
+                        timeEnd = addMinutesToTime(automation.timeStart, automation.duration);
+                    }
+                    
+                    const event = {
+                        id: Date.now() + Math.floor(Math.random() * 10000),
+                        text: automation.itemText,
+                        date: dateStr,
+                        timeStart: automation.timeStart,
+                        timeEnd: timeEnd,
+                        type: automation.type === 'habit' ? 'habit' : 'tarea',
+                        completed: false,
+                        organized: !!automation.startDate,
+                        priority: 'media',
+                        automationId: automation.id,
+                        mode: automation.itemMode
+                    };
+                    
+                    // Evitar duplicados
+                    const exists = scheduledEvents.some(e => 
+                        e.date === event.date && 
+                        e.timeStart === event.timeStart && 
+                        e.text === event.text &&
+                        e.automationId === automation.id
+                    );
+                    
+                    if (!exists) {
+                        scheduledEvents.push(event);
+                    }
+                }
+            }
+        }
+
+        function editAutomation(automationId) {
+            const automation = automations.find(a => a.id === automationId);
+            if (!automation) return;
+            
+            // Rellenar el modal con los datos de la automatización
+            currentAutomationItem = {
+                id: automation.inboxItemId,
+                text: automation.itemText,
+                mode: automation.itemMode
+            };
+            
+            document.getElementById('automationItemName').textContent = automation.itemText;
+            document.getElementById('automationType').value = automation.type;
+            document.getElementById('automationStartDate').value = automation.startDate;
+            document.getElementById('automationEndDate').value = automation.endDate;
+            document.getElementById('automationTimeStart').value = automation.timeStart;
+            
+            if (automation.type === 'habit' && automation.duration) {
+                document.getElementById('automationDuration').value = automation.duration;
+            } else if (automation.timeEnd) {
+                document.getElementById('automationTimeEnd').value = automation.timeEnd;
+            }
+            
+            // Establecer checkboxes
+            for (let i = 0; i <= 6; i++) {
+                document.getElementById(`weekday-${i}`).checked = automation.selectedDays.includes(i);
+            }
+            
+            updateAutomationTypeFields();
+            
+            // Cambiar botón a actualizar
+            const button = document.querySelector('#automationModal button[onclick="saveAutomation()"]');
+            const originalText = button.textContent;
+            button.textContent = '🔄 Actualizar Automatización';
+            button.onclick = () => updateAutomation(automationId, originalText, button);
+            
+            openModal('automationModal');
+        }
+
+        function updateAutomation(automationId, originalText, button) {
+            const automationIndex = automations.findIndex(a => a.id === automationId);
+            if (automationIndex === -1) return;
+            
+            const oldAutomation = automations[automationIndex];
+            
+            // Eliminar eventos generados por la automatización anterior
+            scheduledEvents = scheduledEvents.filter(e => e.automationId !== automationId);
+            
+            // Obtener los nuevos valores
+            const startDate = document.getElementById('automationStartDate').value;
+            const endDate = document.getElementById('automationEndDate').value;
+            const timeStart = document.getElementById('automationTimeStart').value;
+            const type = document.getElementById('automationType').value;
+            
+            const selectedDays = [];
+            for (let i = 0; i <= 6; i++) {
+                if (document.getElementById(`weekday-${i}`).checked) {
+                    selectedDays.push(i);
+                }
+            }
+            
+            let timeEnd = null;
+            let duration = null;
+            
+            if (type === 'habit') {
+                duration = parseInt(document.getElementById('automationDuration').value);
+            } else {
+                timeEnd = document.getElementById('automationTimeEnd').value;
+            }
+            
+            // Actualizar automatización
+            automations[automationIndex] = {
+                ...oldAutomation,
+                startDate: startDate,
+                endDate: endDate,
+                timeStart: timeStart,
+                timeEnd: timeEnd,
+                duration: duration,
+                selectedDays: selectedDays,
+                type: type,
+                updatedAt: new Date().toISOString()
+            };
+            
+            // Ejecutar la automatización actualizada
+            executeAutomation(automations[automationIndex]);
+            persistData();
+            
+            closeModal('automationModal');
+            button.textContent = originalText;
+            button.onclick = () => saveAutomation();
+            alert('✅ Automatización actualizada');
+            renderAutomationsList();
+        }
+
+        function deleteAutomation(automationId) {
+            if (!confirm('¿Eliminar esta automatización y todos sus eventos generados?')) return;
+            
+            // Eliminar eventos asociados
+            scheduledEvents = scheduledEvents.filter(e => e.automationId !== automationId);
+            
+            // Eliminar automatización
+            automations = automations.filter(a => a.id !== automationId);
+            
+            persistData();
+            renderAutomationsList();
+            alert('✅ Automatización eliminada');
+        }
+
+        function toggleAutomation(automationId) {
+            const automation = automations.find(a => a.id === automationId);
+            if (!automation) return;
+            
+            automation.isActive = !automation.isActive;
+            
+            if (!automation.isActive) {
+                // Desactivar: eliminar eventos asociados
+                scheduledEvents = scheduledEvents.filter(e => e.automationId !== automationId);
+            } else {
+                // Activar: recrear eventos
+                executeAutomation(automation);
+            }
+            
+            persistData();
+            renderAutomationsList();
+        }
+
+        function renderAutomationsList() {
+            const container = document.getElementById('automationsListContainer');
+            if (!container) return;
+            
+            if (automations.length === 0) {
+                container.innerHTML = '<div class="empty-state">No hay automatizaciones configuradas</div>';
+                return;
+            }
+            
+            const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            
+            container.innerHTML = automations.map(automation => {
+                const daysText = automation.selectedDays
+                    .map(d => dayNames[d])
+                    .join(', ');
+                
+                const statusBadge = automation.isActive 
+                    ? '<span style="color: var(--success); font-weight: bold;">✓ Activa</span>'
+                    : '<span style="color: var(--text-secondary); font-weight: bold;">○ Inactiva</span>';
+                
+                return `
+                    <div class="automation-item">
+                        <div class="automation-info">
+                            <div class="automation-info-row">
+                                <strong>${escapeHtml(automation.itemText)}</strong> ${statusBadge}
+                            </div>
+                            <div class="automation-info-row">
+                                📅 ${automation.startDate} a ${automation.endDate}
+                            </div>
+                            <div class="automation-info-row">
+                                ⏰ ${automation.timeStart}${automation.timeEnd ? ' a ' + automation.timeEnd : (automation.duration ? ' (' + automation.duration + ' min)' : '')}
+                            </div>
+                            <div class="automation-days">
+                                ${automation.selectedDays.map(d => `<span class="day-badge">${dayNames[d]}</span>`).join('')}
+                            </div>
+                        </div>
+                        <div class="automation-actions">
+                            <button class="btn-small" onclick="toggleAutomation(${automation.id})">
+                                ${automation.isActive ? '⏸️ Pausar' : '▶️ Reanudar'}
+                            </button>
+                            <button class="btn-small" onclick="editAutomation(${automation.id})">
+                                ✏️ Editar
+                            </button>
+                            <button class="btn-small btn-danger" onclick="deleteAutomation(${automation.id})">
+                                🗑️ Eliminar
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         // ========== PROCESAR (FASE 2) ==========
@@ -2053,6 +2535,159 @@
             alert('✅ Proyecto distribuido en el calendario');
         }
 
+        // ========== BLOQUES ALTERNATIVOS ==========
+        function onCalendarTimeSlotClick(dateStr, hour) {
+            openBlockCreationModal(dateStr, hour);
+        }
+
+        function openBlockCreationModal(dateStr, hour) {
+            currentBlockData = {
+                date: dateStr,
+                hour: hour
+            };
+            
+            // Reset formularios
+            document.getElementById('blockName').value = '';
+            document.getElementById('blockSingleForm').style.display = 'none';
+            document.getElementById('blockAutomationForm').style.display = 'none';
+            document.getElementById('blockTimeStart').value = String(hour).padStart(2, '0') + ':00';
+            document.getElementById('blockTimeEnd').value = String(hour + 1).padStart(2, '0') + ':00';
+            document.getElementById('blockAutoTimeStart').value = String(hour).padStart(2, '0') + ':00';
+            document.getElementById('blockAutoTimeEnd').value = String(hour + 1).padStart(2, '0') + ':00';
+            
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('blockAutoStartDate').value = today;
+            
+            const endDate = new Date();
+            endDate.setDate(endDate.getDate() + 30);
+            document.getElementById('blockAutoEndDate').value = endDate.toISOString().split('T')[0];
+            
+            // Reset checkboxes
+            for (let i = 0; i <= 6; i++) {
+                document.getElementById('block-weekday-' + i).checked = (i >= 1 && i <= 5);
+            }
+            
+            openModal('alternativeBlockModal');
+        }
+
+        function showBlockSingleDay() {
+            document.getElementById('blockSingleForm').style.display = 'block';
+            document.getElementById('blockAutomationForm').style.display = 'none';
+        }
+
+        function showBlockAutomation() {
+            document.getElementById('blockSingleForm').style.display = 'none';
+            document.getElementById('blockAutomationForm').style.display = 'block';
+        }
+
+        function createSingleBlock() {
+            const name = document.getElementById('blockName').value.trim();
+            if (!name) {
+                alert('Por favor ingresa un nombre para el bloque');
+                return;
+            }
+            
+            const timeStart = document.getElementById('blockTimeStart').value;
+            const timeEnd = document.getElementById('blockTimeEnd').value;
+            
+            if (!timeStart || !timeEnd) {
+                alert('Por favor completa las horas');
+                return;
+            }
+            
+            scheduledEvents.push({
+                id: Date.now(),
+                title: name,
+                date: currentBlockData.date,
+                timeStart: timeStart,
+                timeEnd: timeEnd,
+                type: 'alternative',
+                completed: false,
+                mode: currentMode
+            });
+            
+            persistData();
+            closeModal('alternativeBlockModal');
+            renderCalendar();
+            alert('✅ Bloque alternativo creado');
+        }
+
+        function createAutomatedBlock() {
+            const name = document.getElementById('blockName').value.trim();
+            if (!name) {
+                alert('Por favor ingresa un nombre para el bloque');
+                return;
+            }
+            
+            const startDate = document.getElementById('blockAutoStartDate').value;
+            const endDate = document.getElementById('blockAutoEndDate').value;
+            const timeStart = document.getElementById('blockAutoTimeStart').value;
+            const timeEnd = document.getElementById('blockAutoTimeEnd').value;
+            
+            if (!startDate || !endDate || !timeStart || !timeEnd) {
+                alert('Por favor completa todos los campos');
+                return;
+            }
+            
+            // Obtener días seleccionados
+            const selectedDays = [];
+            for (let i = 0; i <= 6; i++) {
+                if (document.getElementById('block-weekday-' + i).checked) {
+                    selectedDays.push(i);
+                }
+            }
+            
+            if (selectedDays.length === 0) {
+                alert('Por favor selecciona al menos un día de la semana');
+                return;
+            }
+            
+            const automation = {
+                id: Date.now(),
+                itemName: name,
+                startDate: startDate,
+                endDate: endDate,
+                timeStart: timeStart,
+                timeEnd: timeEnd,
+                selectedDays: selectedDays,
+                isActive: true,
+                mode: currentMode
+            };
+            
+            blockAutomations.push(automation);
+            executeBlockAutomation(automation);
+            
+            persistData();
+            closeModal('alternativeBlockModal');
+            renderCalendar();
+            alert('✅ Automatización de bloque creada');
+        }
+
+        function executeBlockAutomation(automation) {
+            const startDate = new Date(automation.startDate);
+            const endDate = new Date(automation.endDate);
+            
+            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                const dayOfWeek = d.getDay();
+                
+                if (automation.selectedDays.includes(dayOfWeek)) {
+                    const dateStr = d.toISOString().split('T')[0];
+                    
+                    scheduledEvents.push({
+                        id: Date.now() + Math.random(),
+                        title: automation.itemName,
+                        date: dateStr,
+                        timeStart: automation.timeStart,
+                        timeEnd: automation.timeEnd,
+                        type: 'alternative',
+                        automationId: automation.id,
+                        completed: false,
+                        mode: automation.mode
+                    });
+                }
+            }
+        }
+
         // ========== CALENDARIO (FASE 3) ==========
         function switchCalendarView(view) {
             currentView = view;
@@ -2124,13 +2759,13 @@
                 html += `
                     <div class="time-slot" data-time="${timeStr}">
                         <div class="time-label">${timeStr}</div>
-                        <div class="time-content" ondrop="drop(event)" ondragover="allowDrop(event)" data-date="${dateStr}" data-time="${timeStr}">
+                        <div class="time-content" ondrop="drop(event)" ondragover="allowDrop(event)" data-date="${dateStr}" data-time="${timeStr}" ondblclick="onCalendarTimeSlotClick('${dateStr}', ${hour})">
                             ${eventsInSlot.map(e => {
                                 const minutes = calculateDuration(e.timeStart, e.timeEnd);
                                 const heightPercent = (minutes / 60) * 100;
                                 return `
                                     <div class="event-block ${e.type}" draggable="true" ondragstart="drag(event)" onclick="editEventTimePeriod(event, ${e.id})" data-id="${e.id}" style="height: ${heightPercent}%; min-height: auto; display: flex; flex-direction: column; justify-content: center;">
-                                        <strong>${e.title}</strong>
+                                        <strong>${e.title || e.text}</strong>
                                         <small>${e.timeStart} - ${e.timeEnd}</small>
                                     </div>
                                 `;
@@ -2172,13 +2807,13 @@
                     });
                     
                     html += `
-                        <div class="week-cell" ondrop="drop(event)" ondragover="allowDrop(event)" data-date="${dateStr}" data-time="${timeStr}">
+                        <div class="week-cell" ondrop="drop(event)" ondragover="allowDrop(event)" ondblclick="onCalendarTimeSlotClick('${dateStr}', ${hour})" data-date="${dateStr}" data-time="${timeStr}">
                             ${eventsInSlot.map(e => {
                                 const minutes = calculateDuration(e.timeStart, e.timeEnd);
                                 const heightPercent = (minutes / 60) * 100;
                                 return `
                                     <div class="event-block ${e.type}" draggable="true" ondragstart="drag(event)" onclick="editEventTimePeriod(event, ${e.id})" data-id="${e.id}" style="font-size: 0.75rem; height: ${heightPercent}%; min-height: auto; display: flex; flex-direction: column; justify-content: center;">
-                                        ${e.title.substring(0, 20)}...
+                                        ${e.title && e.title.substring ? e.title.substring(0, 20) + '...' : 'Evento'}
                                     </div>
                                 `;
                             }).join('')}
@@ -2211,11 +2846,11 @@
                 const dayEvents = scheduledEvents.filter(e => e.date === dateStr);
                 
                 html += `
-                    <div class="month-day">
+                    <div class="month-day" ondblclick="onCalendarTimeSlotClick('${dateStr}', 12)">
                         <div class="month-day-header">${day}</div>
                         ${dayEvents.map(e => `
-                            <div class="month-event ${e.type}" onclick="editEventTimePeriod(event, ${e.id})" style="cursor:pointer;">
-                                ${e.title.substring(0, 15)}...
+                            <div class="month-event ${e.type}" onclick="event.stopPropagation(); editEventTimePeriod(event, ${e.id})" style="cursor:pointer;">
+                                ${e.title && e.title.substring ? e.title.substring(0, 15) + '...' : 'Evento'}
                             </div>
                         `).join('')}
                     </div>
@@ -2541,7 +3176,7 @@
         function getReflectionConfig() {
             const raw = localStorage.getItem('gtd_reflection_cfg');
             if (!raw) return { reviewDay: 1 };
-            try { return JSON.parse(raw); } catch(e) { return { reviewDay:1 }; }
+            try { return JSON.parse(raw); } catch(e){ return { reviewDay:1 }; }
         }
 
         function saveReflection() {
@@ -2831,6 +3466,9 @@
                 inbox: inbox,
                 scheduledEvents: scheduledEvents,
                 docs: docs,
+                automations: automations,
+                blockAutomations: blockAutomations,
+                alternativeBlocks: alternativeBlocks,
                 improvements: (() => {
                     const raw = localStorage.getItem('gtd_improvements');
                     return raw ? JSON.parse(raw) : [];
@@ -2847,6 +3485,9 @@
                     inbox = data.inbox || [];
                     scheduledEvents = data.scheduledEvents || [];
                     docs = data.docs || [];
+                    automations = data.automations || [];
+                    blockAutomations = data.blockAutomations || [];
+                    alternativeBlocks = data.alternativeBlocks || [];
                 } catch(e) {
                     console.warn('Error cargando datos', e);
                 }
@@ -2861,6 +3502,9 @@
                 inbox: inbox,
                 scheduledEvents: scheduledEvents,
                 docs: docs,
+                automations: automations,
+                blockAutomations: blockAutomations,
+                alternativeBlocks: alternativeBlocks,
                 improvements: (() => {
                     const raw = localStorage.getItem('gtd_improvements');
                     return raw ? JSON.parse(raw) : [];
@@ -2899,6 +3543,9 @@
                     inbox = importedData.inbox || [];
                     scheduledEvents = importedData.scheduledEvents || [];
                     docs = importedData.docs || [];
+                    automations = importedData.automations || [];
+                    blockAutomations = importedData.blockAutomations || [];
+                    alternativeBlocks = importedData.alternativeBlocks || [];
 
                     if (importedData.improvements) {
                         localStorage.setItem('gtd_improvements', JSON.stringify(importedData.improvements));
@@ -2920,6 +3567,7 @@
                     renderEnhancedMetrics();
                     renderTodayTasks();
                     renderDocs();
+                    renderAutomationsList();
 
                     alert('✅ Datos importados correctamente. Recargando...');
                     event.target.value = '';
@@ -2934,211 +3582,29 @@
 
         // ========== INICIALIZACIÓN ==========
         loadData();
+        
+        // Ejecutar automatizaciones activas al cargar
+        automations.filter(a => a.isActive).forEach(a => {
+            // Limpiar eventos antiguos de esta automatización
+            scheduledEvents = scheduledEvents.filter(e => e.automationId !== a.id);
+            // Regenerar eventos para la automatización
+            executeAutomation(a);
+        });
+        
+        // Ejecutar automatizaciones de bloques activas al cargar
+        blockAutomations.filter(a => a.isActive).forEach(a => {
+            // Limpiar eventos antiguos de esta automatización
+            scheduledEvents = scheduledEvents.filter(e => e.automationId !== a.id);
+            // Regenerar eventos para la automatización
+            executeBlockAutomation(a);
+        });
+        
+        persistData();
         renderInbox();
         renderCalendar();
         loadReflectionConfig();
         loadImprovements();
         renderEnhancedMetrics();
-
-        // ========== AUTOMATIZACIÓN ==========
-        let currentAutomationItem = null;
-        let selectedWeekdays = [];
-
-        function openAutomationModal(itemId) {
-            const item = inbox.find(i => i.id === itemId);
-            if (!item) return;
-
-            currentAutomationItem = item;
-            selectedWeekdays = [];
-
-            // Determinar tipo
-            const isPersonal = item.mode === 'personal';
-            const typeText = isPersonal ? '👤 Personal (Tarea/Hábito)' : '🎓 Escolar (Tarea/Examen/Proyecto)';
-            document.getElementById('automationTypeDisplay').textContent = typeText;
-
-            // Mostrar/ocultar configuraciones según modo
-            if (isPersonal) {
-                document.getElementById('autoTaskTimeConfig').style.display = 'block';
-                document.getElementById('autoHabitTimeConfig').style.display = 'block';
-            } else {
-                document.getElementById('autoTaskTimeConfig').style.display = 'block';
-                document.getElementById('autoHabitTimeConfig').style.display = 'none';
-            }
-
-            // Resetear selectores
-            document.querySelectorAll('.weekday-btn').forEach(btn => btn.classList.remove('selected'));
-            document.getElementById('autoStartDate').value = '';
-            document.getElementById('autoEndDate').value = '';
-            document.getElementById('autoTaskTimeStart').value = '09:00';
-            document.getElementById('autoTaskTimeEnd').value = '10:00';
-            document.getElementById('autoHabitTimeStart').value = '09:00';
-            document.getElementById('autoHabitDuration').value = '30';
-
-            openModal('automationModal');
-            updateAutomationPreview();
-        }
-
-        function toggleWeekday(event) {
-            const btn = event.currentTarget;
-            const day = parseInt(btn.getAttribute('data-day'), 10);
-            
-            if (selectedWeekdays.includes(day)) {
-                selectedWeekdays = selectedWeekdays.filter(d => d !== day);
-                btn.classList.remove('selected');
-            } else {
-                selectedWeekdays.push(day);
-                btn.classList.add('selected');
-            }
-            
-            updateAutomationPreview();
-        }
-
-        function updateAutomationPreview() {
-            const startDate = document.getElementById('autoStartDate').value;
-            const endDate = document.getElementById('autoEndDate').value;
-            const preview = document.getElementById('autoPreview');
-
-            if (!startDate || !endDate || selectedWeekdays.length === 0) {
-                preview.textContent = 'Selecciona fechas y días para ver la vista previa';
-                preview.style.color = 'var(--text-secondary)';
-                return;
-            }
-
-            const start = new Date(startDate + 'T00:00:00');
-            const end = new Date(endDate + 'T00:00:00');
-
-            if (start > end) {
-                preview.textContent = '❌ La fecha de inicio debe ser anterior a la de fin';
-                preview.style.color = 'var(--danger)';
-                return;
-            }
-
-            const dates = [];
-            const current = new Date(start);
-
-            while (current <= end && dates.length < 10) {
-                if (selectedWeekdays.includes(current.getDay())) {
-                    dates.push(new Date(current));
-                }
-                current.setDate(current.getDate() + 1);
-            }
-
-            if (dates.length === 0) {
-                preview.textContent = '❌ No hay fechas coincidentes con los días seleccionados';
-                preview.style.color = 'var(--danger)';
-                return;
-            }
-
-            const dateStrings = dates.map(d => d.toLocaleDateString('es-ES', {weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'}));
-            preview.innerHTML = `<strong>${dates.length} fecha${dates.length > 1 ? 's' : ''} generada${dates.length > 1 ? 's' : ''}:</strong><br>` + dateStrings.join('<br>');
-            preview.style.color = 'var(--text-primary)';
-        }
-
-        function confirmAutomation() {
-            const item = currentAutomationItem;
-            if (!item) return;
-
-            const startDate = document.getElementById('autoStartDate').value;
-            const endDate = document.getElementById('autoEndDate').value;
-
-            if (!startDate || !endDate || selectedWeekdays.length === 0) {
-                alert('⚠️ Completa todos los campos: fechas y días de la semana');
-                return;
-            }
-
-            const start = new Date(startDate + 'T00:00:00');
-            const end = new Date(endDate + 'T00:00:00');
-
-            if (start > end) {
-                alert('⚠️ La fecha de inicio debe ser anterior a la de fin');
-                return;
-            }
-
-            // Generar fechas
-            const dates = [];
-            const current = new Date(start);
-
-            while (current <= end) {
-                if (selectedWeekdays.includes(current.getDay())) {
-                    dates.push(new Date(current).toISOString().split('T')[0]);
-                }
-                current.setDate(current.getDate() + 1);
-            }
-
-            if (dates.length === 0) {
-                alert('❌ No hay fechas coincidentes');
-                return;
-            }
-
-            // Crear eventos según modo
-            const isPersonal = item.mode === 'personal';
-
-            if (isPersonal) {
-                // Modo personal: permitir elegir si es tarea o hábito
-                const choice = confirm('¿Es un HÁBITO? (OK) o ¿Es una TAREA? (Cancelar)');
-                const type = choice ? 'habit' : 'tarea-personal';
-
-                if (type === 'habit') {
-                    const timeStart = document.getElementById('autoHabitTimeStart').value;
-                    const duration = parseInt(document.getElementById('autoHabitDuration').value, 10);
-
-                    dates.forEach(dateStr => {
-                        const timeEnd = addMinutesToTime(timeStart, duration);
-                        scheduledEvents.push({
-                            id: Date.now() + Math.floor(Math.random() * 10000),
-                            title: item.text,
-                            type: 'habit',
-                            date: dateStr,
-                            timeStart: timeStart,
-                            timeEnd: timeEnd,
-                            completed: false,
-                            mode: 'personal'
-                        });
-                    });
-                } else {
-                    const timeStart = document.getElementById('autoTaskTimeStart').value;
-                    const timeEnd = document.getElementById('autoTaskTimeEnd').value;
-
-                    dates.forEach(dateStr => {
-                        scheduledEvents.push({
-                            id: Date.now() + Math.floor(Math.random() * 10000),
-                            title: item.text,
-                            type: 'tarea-personal',
-                            date: dateStr,
-                            timeStart: timeStart,
-                            timeEnd: timeEnd,
-                            completed: false,
-                            mode: 'personal'
-                        });
-                    });
-                }
-            } else {
-                // Modo escolar: tareas simples
-                const timeStart = document.getElementById('autoTaskTimeStart').value;
-                const timeEnd = document.getElementById('autoTaskTimeEnd').value;
-
-                dates.forEach(dateStr => {
-                    scheduledEvents.push({
-                        id: Date.now() + Math.floor(Math.random() * 10000),
-                        title: item.text,
-                        type: 'tarea',
-                        date: dateStr,
-                        timeStart: timeStart,
-                        timeEnd: timeEnd,
-                        completed: false,
-                        mode: 'escolar'
-                    });
-                });
-            }
-
-            // Marcar como procesado
-            item.processed = true;
-            closeModal('automationModal');
-            renderInbox();
-            renderProcessArea();
-            persistData();
-            alert(`✅ Automatización creada: ${dates.length} evento${dates.length > 1 ? 's' : ''} generado${dates.length > 1 ? 's' : ''}`);
-        }
     </script>
 </body>
 </html>
