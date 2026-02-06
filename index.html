@@ -1034,6 +1034,7 @@
             <button class="tab-btn" onclick="showSection('configuracion')">⚙️ Configuración</button>
             <button class="tab-btn" id="bookTrackerTab" style="display:none;" onclick="showSection('bookTracker')">📖 Book Tracker</button>
             <button class="tab-btn" id="docTab" onclick="showSection('documentacion')">📚 Documentación</button>
+            <button class="tab-btn btn-danger" onclick="formatSystem()" style="margin-left:auto; background-color:var(--danger);">🔄 Formatear</button>
         </div>
 
         <!-- SECCIÓN 1: RECOPILAR -->
@@ -1785,6 +1786,9 @@
 
         // ========== AUTOMATIZACIÓN (NUEVA FUNCIONALIDAD) ==========
         function openAutomationModal(itemId, itemText, itemMode) {
+            console.log('=== ABRIENDO MODAL DE AUTOMATIZACIÓN ===');
+            console.log('Item:', { itemId, itemText, itemMode });
+            
             currentAutomationItem = { id: itemId, text: itemText, mode: itemMode };
             document.getElementById('automationItemName').textContent = itemText;
             
@@ -1807,11 +1811,17 @@
             // Reset checkboxes
             for (let i = 0; i <= 6; i++) {
                 const checkbox = document.getElementById(`weekday-${i}`);
-                checkbox.checked = i >= 1 && i <= 5; // Lunes a viernes por defecto
+                if (checkbox) {
+                    checkbox.checked = i >= 1 && i <= 5; // Lunes a viernes por defecto
+                    console.log(`Checkbox weekday-${i} = ${checkbox.checked}`);
+                } else {
+                    console.warn(`❌ No se encontró checkbox weekday-${i}`);
+                }
             }
             
             updateAutomationTypeFields();
             openModal('automationModal');
+            console.log('✅ Modal de automatización abierto');
         }
 
         function updateAutomationTypeFields() {
@@ -1831,7 +1841,13 @@
         }
 
         function saveAutomation() {
-            if (!currentAutomationItem) return;
+            if (!currentAutomationItem) {
+                console.error('No hay item de automatización seleccionado');
+                return;
+            }
+            
+            console.log('=== INICIANDO CREACIÓN DE AUTOMATIZACIÓN ===');
+            console.log('Item:', currentAutomationItem);
             
             const startDate = document.getElementById('automationStartDate').value;
             const endDate = document.getElementById('automationEndDate').value;
@@ -1846,8 +1862,10 @@
             // Obtener días seleccionados
             const selectedDays = [];
             for (let i = 0; i <= 6; i++) {
-                if (document.getElementById(`weekday-${i}`).checked) {
+                const checkbox = document.getElementById(`weekday-${i}`);
+                if (checkbox && checkbox.checked) {
                     selectedDays.push(i);
+                    console.log(`Día ${i} seleccionado`);
                 }
             }
             
@@ -1855,6 +1873,8 @@
                 alert('Selecciona al menos un día de la semana');
                 return;
             }
+            
+            console.log('Días seleccionados:', selectedDays);
             
             let timeEnd = null;
             let duration = null;
@@ -1889,15 +1909,59 @@
                 createdAt: new Date().toISOString()
             };
             
-            automations.push(automation);
-            persistData();
+            console.log('Objeto de automatización creado:', automation);
+            console.log('Automations antes de push:', automations.length);
+            
+            try {
+                automations.push(automation);
+                console.log('✅ Automatización pusheada al array. Total:', automations.length);
+            } catch(e) {
+                console.error('❌ Error al pushear automatización:', e);
+                alert('Error al crear automación: ' + e.message);
+                return;
+            }
+            
+            try {
+                persistData();
+                console.log('✅ Datos persistidos después de push');
+            } catch(e) {
+                console.error('❌ Error al persistir datos:', e);
+                alert('Error al guardar automación: ' + e.message);
+                return;
+            }
             
             // Ejecutar automatización inmediatamente
-            executeAutomation(automation);
+            try {
+                executeAutomation(automation);
+                console.log('✅ Automatización ejecutada - eventos generados');
+            } catch(e) {
+                console.error('❌ Error al ejecutar automatización:', e);
+                alert('Error al ejecutar automación: ' + e.message);
+                return;
+            }
+            
+            // Eliminar item del inbox (ya es una automatización gestionada)
+            const inboxLengthAntes = inbox.length;
+            inbox = inbox.filter(item => item.id !== currentAutomationItem.id);
+            console.log(`Inbox filtrado: ${inboxLengthAntes} → ${inbox.length} items`);
+            
+            try {
+                persistData();
+                console.log('✅ Datos persistidos después de filtro');
+            } catch(e) {
+                console.error('❌ Error al persistir datos filtrados:', e);
+            }
             
             closeModal('automationModal');
+            console.log('✅ Modal cerrado');
+            
             alert(`✅ Automatización creada. Se generarán eventos entre ${startDate} y ${endDate}`);
+            
+            console.log('Llamando a renderInbox...');
             renderInbox();
+            console.log('Llamando a renderAutomationsList...');
+            renderAutomationsList();
+            console.log('=== AUTOMATIZACIÓN COMPLETADA ===');
         }
 
         function executeAutomation(automation) {
@@ -2072,55 +2136,95 @@
         }
 
         function renderAutomationsList() {
+            console.log('=== RENDERIZANDO LISTA DE AUTOMATIZACIONES ===');
+            
+            // Protección: asegurar que automations es un array válido
+            if (!automations || !Array.isArray(automations)) {
+                console.error('❌ automations no es un array válido:', automations);
+                automations = [];
+            }
+            
+            console.log('Total de automations en array:', automations.length);
+            
             const container = document.getElementById('automationsListContainer');
-            if (!container) return;
+            if (!container) {
+                console.error('❌ Contenedor automationsListContainer NO ENCONTRADO en el DOM');
+                return;
+            }
+            console.log('✅ Contenedor encontrado en DOM');
             
             if (automations.length === 0) {
+                console.log('No hay automatizaciones - mostrando empty state');
                 container.innerHTML = '<div class="empty-state">No hay automatizaciones configuradas</div>';
                 return;
             }
             
+            console.log('Renderizando', automations.length, 'automatizaciones');
+            
             const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
             
-            container.innerHTML = automations.map(automation => {
-                const daysText = automation.selectedDays
-                    .map(d => dayNames[d])
-                    .join(', ');
-                
-                const statusBadge = automation.isActive 
-                    ? '<span style="color: var(--success); font-weight: bold;">✓ Activa</span>'
-                    : '<span style="color: var(--text-secondary); font-weight: bold;">○ Inactiva</span>';
-                
-                return `
-                    <div class="automation-item">
-                        <div class="automation-info">
-                            <div class="automation-info-row">
-                                <strong>${escapeHtml(automation.itemText)}</strong> ${statusBadge}
+            try {
+                const html = automations.map((automation, index) => {
+                    if (!automation) {
+                        console.warn(`Automatización en índice ${index} es null/undefined`);
+                        return '';
+                    }
+                    
+                    console.log(`Procesando automatización ${index + 1}:`, automation);
+                    
+                    // Protección para selectedDays
+                    if (!automation.selectedDays || !Array.isArray(automation.selectedDays)) {
+                        console.warn(`Automatización ${index} no tiene selectedDays válido:`, automation.selectedDays);
+                        automation.selectedDays = [];
+                    }
+                    
+                    const daysText = automation.selectedDays
+                        .map(d => dayNames[d])
+                        .join(', ');
+                    
+                    const statusBadge = automation.isActive 
+                        ? '<span style="color: var(--success); font-weight: bold;">✓ Activa</span>'
+                        : '<span style="color: var(--text-secondary); font-weight: bold;">○ Inactiva</span>';
+                    
+                    return `
+                        <div class="automation-item">
+                            <div class="automation-info">
+                                <div class="automation-info-row">
+                                    <strong>${escapeHtml(automation.itemText)}</strong> ${statusBadge}
+                                </div>
+                                <div class="automation-info-row">
+                                    📅 ${automation.startDate} a ${automation.endDate}
+                                </div>
+                                <div class="automation-info-row">
+                                    ⏰ ${automation.timeStart}${automation.timeEnd ? ' a ' + automation.timeEnd : (automation.duration ? ' (' + automation.duration + ' min)' : '')}
+                                </div>
+                                <div class="automation-days">
+                                    ${(automation.selectedDays || []).map(d => `<span class="day-badge">${dayNames[d]}</span>`).join('')}
+                                </div>
                             </div>
-                            <div class="automation-info-row">
-                                📅 ${automation.startDate} a ${automation.endDate}
-                            </div>
-                            <div class="automation-info-row">
-                                ⏰ ${automation.timeStart}${automation.timeEnd ? ' a ' + automation.timeEnd : (automation.duration ? ' (' + automation.duration + ' min)' : '')}
-                            </div>
-                            <div class="automation-days">
-                                ${automation.selectedDays.map(d => `<span class="day-badge">${dayNames[d]}</span>`).join('')}
+                            <div class="automation-actions">
+                                <button class="btn-small" onclick="toggleAutomation(${automation.id})">
+                                    ${automation.isActive ? '⏸️ Pausar' : '▶️ Reanudar'}
+                                </button>
+                                <button class="btn-small" onclick="editAutomation(${automation.id})">
+                                    ✏️ Editar
+                                </button>
+                                <button class="btn-small btn-danger" onclick="deleteAutomation(${automation.id})">
+                                    🗑️ Eliminar
+                                </button>
                             </div>
                         </div>
-                        <div class="automation-actions">
-                            <button class="btn-small" onclick="toggleAutomation(${automation.id})">
-                                ${automation.isActive ? '⏸️ Pausar' : '▶️ Reanudar'}
-                            </button>
-                            <button class="btn-small" onclick="editAutomation(${automation.id})">
-                                ✏️ Editar
-                            </button>
-                            <button class="btn-small btn-danger" onclick="deleteAutomation(${automation.id})">
-                                🗑️ Eliminar
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+                    `;
+                }).join('');
+                
+                container.innerHTML = html;
+                console.log('✅ HTML renderizado exitosamente en contenedor');
+            } catch(e) {
+                console.error('❌ Error al renderizar HTML:', e);
+                console.error('Stack:', e.stack);
+                container.innerHTML = '<div class="empty-state">Error al cargar automatizaciones</div>';
+            }
+            console.log('=== RENDERIZADO COMPLETADO ===');
         }
 
         // ========== PROCESAR (FASE 2) ==========
@@ -2639,6 +2743,18 @@
             document.getElementById('blockAutomationForm').style.display = 'block';
         }
 
+        function deleteAlternativeBlock(blockId) {
+            if (!confirm('¿Eliminar este bloque alternativo y sus eventos?')) return;
+            const block = alternativeBlocks.find(b => b.id === blockId);
+            if (!block) return;
+            // Remove associated events
+            scheduledEvents = scheduledEvents.filter(e => e.id !== block.eventId);
+            alternativeBlocks = alternativeBlocks.filter(b => b.id !== blockId);
+            persistData();
+            renderCalendar();
+            alert('✅ Bloque alternativo eliminado');
+        }
+
         function createSingleBlock() {
             const name = document.getElementById('blockName').value.trim();
             if (!name) {
@@ -2654,21 +2770,46 @@
                 return;
             }
             
+            const eventId = Date.now();
             scheduledEvents.push({
-                id: Date.now(),
+                id: eventId,
+                text: name,
                 title: name,
                 date: currentBlockData.date,
                 timeStart: timeStart,
                 timeEnd: timeEnd,
                 type: 'alternative',
                 completed: false,
-                mode: currentMode
+                mode: currentMode,
+                isAlternativeBlock: true
+            });
+            
+            // Register for management
+            alternativeBlocks.push({
+                id: Date.now() + 1,
+                name: name,
+                date: currentBlockData.date,
+                timeStart: timeStart,
+                timeEnd: timeEnd,
+                eventId: eventId
             });
             
             persistData();
             closeModal('alternativeBlockModal');
             renderCalendar();
             alert('✅ Bloque alternativo creado');
+        }
+        
+        function deleteAlternativeBlock(blockId) {
+            if (!confirm('¿Eliminar este bloque alternativo?')) return;
+            const block = alternativeBlocks.find(b => b.id === blockId);
+            if (block) {
+                scheduledEvents = scheduledEvents.filter(e => e.id !== block.eventId);
+            }
+            alternativeBlocks = alternativeBlocks.filter(b => b.id !== blockId);
+            persistData();
+            renderCalendar();
+            alert('✅ Bloque alternativo eliminado');
         }
 
         function createAutomatedBlock() {
@@ -2949,13 +3090,22 @@
         function editEventTimePeriod(e, eventId) {
             e.stopPropagation();
             
-
             const eventObj = scheduledEvents.find(ev => ev.id === eventId);
             if (!eventObj) return;
             
             if (!eventObj.timeStart) {
                 alert('Este elemento no tiene horario específico');
                 return;
+            }
+            
+            // Para bloques alternativos, ofrecer opción de eliminar
+            if (eventObj.isAlternativeBlock && !eventObj.automationId) {
+                const action = prompt('¿Qué deseas hacer? (1=Editar, 2=Eliminar):', '1');
+                if (action === '2') {
+                    deleteAlternativeBlock(alternativeBlocks.find(b => b.eventId === eventId)?.id);
+                    return;
+                }
+                if (action !== '1') return;
             }
             
             const newStart = prompt('Nueva hora de inicio (HH:MM):', eventObj.timeStart);
@@ -3004,7 +3154,8 @@
         function renderTodayTasks() {
             const container = document.getElementById('todayTasks');
             const today = new Date().toISOString().split('T')[0];
-            const todayEvents = scheduledEvents.filter(e => e.date === today);
+            // Filter out alternative blocks (no automationId = manual alternative blocks)
+            const todayEvents = scheduledEvents.filter(e => e.date === today && (!e.isAlternativeBlock || e.automationId));
             
             if (todayEvents.length === 0) {
                 container.innerHTML = '<div class="empty-state">🎉 No tienes tareas programadas para hoy</div>';
@@ -3022,7 +3173,7 @@
                 <div class="task-item ${event.completed ? 'completed' : ''}">
                     <div>
                         <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 8px;">
-                            ${event.title}
+                            ${event.text || event.title}
                         </div>
                         <div>
                             <span class="badge badge-${event.type}">${event.type.toUpperCase()}</span>
@@ -3032,15 +3183,24 @@
                             }
                         </div>
                     </div>
-                    <div>
+                    <div style="display:flex; gap:8px; align-items:center;">
                         ${!event.completed ? 
                             `<button class="btn-success" onclick="completeEvent(${event.id})">✅ Completar</button>
-                             ${event.timeStart ? `<button class="btn-small" onclick="editEventTime(${event.id})" style="background-color: var(--accent-primary); margin-left: 8px;">⏱️ Ajustar</button>` : ''}` :
+                             ${event.timeStart ? `<button class="btn-small" onclick="editEventTime(${event.id})" style="background-color: var(--accent-primary);">⏱️ Ajustar</button>` : ''}
+                             <button class="btn-danger" onclick="deleteTask(${event.id})">🗑️</button>` :
                             '<span style="color: var(--success);">✅ Completada</span>'
                         }
                     </div>
                 </div>
             `).join('');
+        }
+        
+        function deleteTask(eventId) {
+            if (!confirm('¿Eliminar esta tarea?')) return;
+            scheduledEvents = scheduledEvents.filter(e => e.id !== eventId);
+            persistData();
+            renderTodayTasks();
+            alert('✅ Tarea eliminada');
         }
 
         function completeEvent(id) {
@@ -3641,6 +3801,53 @@
             return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]));
         }
 
+        // ========== FORMATEAR SISTEMA (LIMPIAR) ==========
+        function formatSystem() {
+            if (!confirm('⚠️ ADVERTENCIA: Esto eliminará TODOS los eventos programados en el calendario. ¿Estás seguro?')) return;
+            if (!confirm('Esta acción es irreversible. ¿Continuar?')) return;
+            
+            scheduledEvents = [];
+            alternativeBlocks = [];
+            persistData();
+            renderTodayTasks();
+            renderCalendar();
+            alert('✅ Sistema formateado. Todos los eventos han sido eliminados.');
+        }
+
+        // Función para limpiar automations inválidas
+        function validateAndFixAutomations() {
+            console.log('🔍 Validando automations...');
+            const validAutomations = [];
+            
+            for (let i = 0; i < automations.length; i++) {
+                const a = automations[i];
+                console.log(`Checking automation ${i}:`, a);
+                
+                // Validar estructura mínima
+                if (!a.id || !a.itemText) {
+                    console.warn(`❌ Automatización ${i} descartada por falta de id/itemText:`, a);
+                    continue;
+                }
+                
+                // Reparar selectedDays
+                if (!a.selectedDays || !Array.isArray(a.selectedDays)) {
+                    console.warn(`⚠️ Reparando selectedDays en automatización ${i}`);
+                    a.selectedDays = a.selectedDays ? [a.selectedDays] : [1, 2, 3, 4, 5]; // Default: lunes a viernes
+                }
+                
+                // Reparar otras propiedades si faltan
+                if (!a.type) a.type = 'tarea';
+                if (!a.isActive) a.isActive = true;
+                if (!a.startDate) a.startDate = new Date().toISOString().split('T')[0];
+                
+                validAutomations.push(a);
+            }
+            
+            console.log(`✅ Validación completa: ${automations.length} → ${validAutomations.length} automations válidas`);
+            automations = validAutomations;
+            persistData();
+        }
+
         // ========== PERSISTENCIA DE DATOS ==========
         function persistData() {
             const data = {
@@ -3666,12 +3873,29 @@
                     inbox = data.inbox || [];
                     scheduledEvents = data.scheduledEvents || [];
                     docs = data.docs || [];
-                    automations = data.automations || [];
+                    automations = (data.automations || []).filter(a => {
+                        // Validar que cada automatización tenga la estructura correcta
+                        if (!a.id || !a.itemText || !a.selectedDays || !Array.isArray(a.selectedDays)) {
+                            console.warn('⚠️ Automatización inválida descartada:', a);
+                            return false;
+                        }
+                        // Reparar si selectedDays no es un array
+                        if (!Array.isArray(a.selectedDays)) {
+                            a.selectedDays = [];
+                        }
+                        return true;
+                    });
                     blockAutomations = data.blockAutomations || [];
                     alternativeBlocks = data.alternativeBlocks || [];
+                    console.log('✅ Datos cargados del localStorage. Automations:', automations.length);
+                    console.log('Automations:', automations);
                 } catch(e) {
                     console.warn('Error cargando datos', e);
+                    automations = [];
                 }
+            } else {
+                console.log('ℹ️ No hay datos guardados en localStorage aún');
+                automations = [];
             }
             loadDocs();
             loadImprovements();
@@ -3764,21 +3988,41 @@
         // ========== INICIALIZACIÓN ==========
         loadData();
         
-        // Ejecutar automatizaciones activas al cargar
-        automations.filter(a => a.isActive).forEach(a => {
-            // Limpiar eventos antiguos de esta automatización
-            scheduledEvents = scheduledEvents.filter(e => e.automationId !== a.id);
-            // Regenerar eventos para la automatización
-            executeAutomation(a);
+        // Validar y reparar automations inválidas
+        validateAndFixAutomations();
+        
+        // Asegurar que los arrays están inicializados
+        if (!automations || !Array.isArray(automations)) automations = [];
+        if (!blockAutomations || !Array.isArray(blockAutomations)) blockAutomations = [];
+        if (!inbox || !Array.isArray(inbox)) inbox = [];
+        if (!scheduledEvents || !Array.isArray(scheduledEvents)) scheduledEvents = [];
+        
+        console.log('✅ Arrays inicializados:', {
+            automations: automations.length,
+            blockAutomations: blockAutomations.length,
+            inbox: inbox.length,
+            scheduledEvents: scheduledEvents.length
         });
         
+        // Ejecutar automatizaciones activas al cargar
+        if (automations && Array.isArray(automations)) {
+            automations.filter(a => a.isActive).forEach(a => {
+                // Limpiar eventos antiguos de esta automatización
+                scheduledEvents = scheduledEvents.filter(e => e.automationId !== a.id);
+                // Regenerar eventos para la automatización
+                executeAutomation(a);
+            });
+        }
+        
         // Ejecutar automatizaciones de bloques activas al cargar
-        blockAutomations.filter(a => a.isActive).forEach(a => {
-            // Limpiar eventos antiguos de esta automatización
-            scheduledEvents = scheduledEvents.filter(e => e.automationId !== a.id);
-            // Regenerar eventos para la automatización
-            executeBlockAutomation(a);
-        });
+        if (blockAutomations && Array.isArray(blockAutomations)) {
+            blockAutomations.filter(a => a.isActive).forEach(a => {
+                // Limpiar eventos antiguos de esta automatización
+                scheduledEvents = scheduledEvents.filter(e => e.automationId !== a.id);
+                // Regenerar eventos para la automatización
+                executeBlockAutomation(a);
+            });
+        }
         
         persistData();
         renderInbox();
