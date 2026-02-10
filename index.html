@@ -3154,8 +3154,9 @@
         function renderTodayTasks() {
             const container = document.getElementById('todayTasks');
             const today = new Date().toISOString().split('T')[0];
-            // Filter out alternative blocks (no automationId = manual alternative blocks)
-            const todayEvents = scheduledEvents.filter(e => e.date === today && (!e.isAlternativeBlock || e.automationId));
+            // Mostrar solo tareas, hábitos, proyectos y exámenes. Excluir bloques alternativos
+            const validTypes = ['tarea', 'habit', 'proyecto', 'examen'];
+            const todayEvents = scheduledEvents.filter(e => e.date === today && validTypes.includes(e.type) && !e.isAlternativeBlock);
             
             if (todayEvents.length === 0) {
                 container.innerHTML = '<div class="empty-state">🎉 No tienes tareas programadas para hoy</div>';
