@@ -1295,18 +1295,17 @@
                         <!-- APARTADO DE OBJETIVOS -->
                         <div class="improvements-section" style="margin-top: 24px; padding-top: 20px; border-top: 2px solid var(--border-color);">
                             <h4>🎯 Objetivos</h4>
-                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 12px;">Define objetivos para diferentes plazos (corto, medio, largo plazo) y monitorea tu progreso.</p>
-                            <div class="improvement-add">
-                                <select id="objectivePeriod" style="padding: 8px; border-radius: 8px;">
-                                    <option value="corto">Corto plazo (hasta 3 meses)</option>
-                                    <option value="medio">Medio plazo (3-12 meses)</option>
-                                    <option value="largo">Largo plazo (más de 1 año)</option>
-                                </select>
-                            </div>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 12px;">Define objetivos con fechas de inicio y fin.</p>
                             <div class="improvement-add">
                                 <input id="newObjective" placeholder="Describe un objetivo..." style="flex: 1;">
-                                <button onclick="addObjective()" style="background-color: #9b59b6;">➕ Crear objetivo</button>
                             </div>
+                            <div class="improvement-add">
+                                <label style="color: var(--text-secondary); font-size: 0.9rem;">Fecha inicio:</label>
+                                <input type="date" id="objectiveStartDate" style="padding: 8px; border-radius: 8px;">
+                                <label style="color: var(--text-secondary); font-size: 0.9rem; margin-left: 12px;">Fecha fin:</label>
+                                <input type="date" id="objectiveEndDate" style="padding: 8px; border-radius: 8px;">
+                            </div>
+                            <button onclick="addObjective()" style="background-color: #9b59b6; width: 100%; margin-bottom: 12px;">➕ Crear objetivo</button>
                             <div id="objectivesList" class="improvements-list"></div>
                         </div>
                     </div>
@@ -3930,39 +3929,39 @@
 
         function addObjective() {
             const text = document.getElementById('newObjective').value.trim();
-            const period = document.getElementById('objectivePeriod').value;
+            const startDate = document.getElementById('objectiveStartDate').value;
+            const endDate = document.getElementById('objectiveEndDate').value;
             
             if (!text) {
                 alert('Por favor describe un objetivo');
                 return;
             }
             
+            if (!startDate) {
+                alert('Por favor selecciona una fecha de inicio');
+                return;
+            }
+            
+            if (!endDate) {
+                alert('Por favor selecciona una fecha de fin');
+                return;
+            }
+            
             objectives.push({
                 id: Date.now(),
                 text: text,
-                period: period,
                 completed: false,
-                progress: 0,
-                createdAt: new Date().toISOString(),
-                dueDate: calculateDueDate(period)
+                startDate: startDate,
+                endDate: endDate,
+                createdAt: new Date().toISOString()
             });
             
             persistObjectives();
             document.getElementById('newObjective').value = '';
+            document.getElementById('objectiveStartDate').value = '';
+            document.getElementById('objectiveEndDate').value = '';
             renderObjectives();
             alert('✅ Objetivo creado');
-        }
-
-        function calculateDueDate(period) {
-            const today = new Date();
-            if (period === 'corto') {
-                today.setMonth(today.getMonth() + 3);
-            } else if (period === 'medio') {
-                today.setMonth(today.getMonth() + 12);
-            } else if (period === 'largo') {
-                today.setFullYear(today.getFullYear() + 2);
-            }
-            return today.toISOString().split('T')[0];
         }
 
         function getPeriodLabel(period) {
@@ -3984,66 +3983,33 @@
                 return;
             }
             
-            // Agrupar objetivos por período
-            const byPeriod = { corto: [], medio: [], largo: [] };
-            objectives.forEach(obj => {
-                if (byPeriod[obj.period]) {
-                    byPeriod[obj.period].push(obj);
-                }
-            });
-            
-            ['corto', 'medio', 'largo'].forEach(period => {
-                if (byPeriod[period].length === 0) return;
+            objectives.slice().reverse().forEach(obj => {
+                const objDiv = document.createElement('div');
+                objDiv.style.backgroundColor = 'var(--bg-secondary)';
+                objDiv.style.padding = '12px';
+                objDiv.style.borderRadius = '8px';
+                objDiv.style.marginBottom = '8px';
+                objDiv.style.borderLeft = obj.completed ? '4px solid var(--success)' : '4px solid var(--accent-primary)';
+                objDiv.style.opacity = obj.completed ? '0.7' : '1';
                 
-                const periodDiv = document.createElement('div');
-                periodDiv.style.marginBottom = '20px';
-                periodDiv.style.paddingBottom = '16px';
-                periodDiv.style.borderBottom = '2px solid var(--border-color)';
-                
-                const periodTitle = document.createElement('div');
-                periodTitle.style.fontWeight = '600';
-                periodTitle.style.color = 'var(--accent-primary)';
-                periodTitle.style.marginBottom = '12px';
-                periodTitle.textContent = getPeriodLabel(period).toUpperCase();
-                periodDiv.appendChild(periodTitle);
-                
-                byPeriod[period].forEach(obj => {
-                    const objDiv = document.createElement('div');
-                    objDiv.style.backgroundColor = 'var(--bg-secondary)';
-                    objDiv.style.padding = '12px';
-                    objDiv.style.borderRadius = '8px';
-                    objDiv.style.marginBottom = '8px';
-                    objDiv.style.borderLeft = obj.completed ? '4px solid var(--success)' : '4px solid var(--accent-primary)';
-                    objDiv.style.opacity = obj.completed ? '0.7' : '1';
-                    
-                    objDiv.innerHTML = `
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
-                            <div style="flex: 1;">
-                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                    <input type="checkbox" ${obj.completed ? 'checked' : ''} onchange="toggleObjective(${obj.id})" style="cursor: pointer; width: 20px; height: 20px;">
-                                    <div style="font-weight: 600; ${obj.completed ? 'text-decoration: line-through; color: var(--text-secondary);' : ''}">${escapeHtml(obj.text)}</div>
-                                </div>
-                                <div style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 8px;">
-                                    📅 Vencimiento: ${new Date(obj.dueDate).toLocaleDateString('es-ES')}
-                                </div>
-                                <div style="margin-bottom: 8px;">
-                                    <label style="display: block; font-size: 0.9rem; margin-bottom: 6px;">Progreso: ${obj.progress}%</label>
-                                    <div style="width: 100%; height: 8px; background-color: var(--border-color); border-radius: 4px; overflow: hidden;">
-                                        <div style="height: 100%; width: ${obj.progress}%; background-color: var(--success); transition: width 0.3s;"></div>
-                                    </div>
-                                </div>
+                objDiv.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <input type="checkbox" ${obj.completed ? 'checked' : ''} onchange="toggleObjective(${obj.id})" style="cursor: pointer; width: 20px; height: 20px;">
+                                <div style="font-weight: 600; ${obj.completed ? 'text-decoration: line-through; color: var(--text-secondary);' : ''}">${escapeHtml(obj.text)}</div>
                             </div>
-                            <div style="display: flex; flex-direction: column; gap: 6px;">
-                                <button class="btn-small" onclick="editObjectiveProgress(${obj.id})" style="background-color: var(--warning); width: 80px;">📊 Progreso</button>
-                                <button class="btn-small" onclick="editObjectiveText(${obj.id})" style="background-color: var(--accent-primary); width: 80px;">✏️ Editar</button>
-                                <button class="btn-small btn-danger" onclick="deleteObjective(${obj.id})" style="width: 80px;">🗑️</button>
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">
+                                📅 ${obj.startDate} → ${obj.endDate}
                             </div>
                         </div>
-                    `;
-                    periodDiv.appendChild(objDiv);
-                });
-                
-                container.appendChild(periodDiv);
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <button class="btn-small" onclick="editObjectiveText(${obj.id})" style="background-color: var(--accent-primary); width: 80px;">✏️ Editar</button>
+                            <button class="btn-small btn-danger" onclick="deleteObjective(${obj.id})" style="width: 80px;">🗑️</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(objDiv);
             });
         }
 
@@ -4067,25 +4033,6 @@
                 persistObjectives();
                 renderObjectives();
                 alert('✅ Objetivo actualizado');
-            }
-        }
-
-        function editObjectiveProgress(id) {
-            const obj = objectives.find(o => o.id === id);
-            if (!obj) return;
-            
-            const newProgress = prompt('Actualizar progreso (0-100%):', obj.progress);
-            if (newProgress !== null) {
-                const progress = Math.max(0, Math.min(100, parseInt(newProgress, 10)));
-                if (!isNaN(progress)) {
-                    obj.progress = progress;
-                    if (progress === 100) {
-                        obj.completed = true;
-                    }
-                    persistObjectives();
-                    renderObjectives();
-                    alert('✅ Progreso actualizado');
-                }
             }
         }
 
