@@ -1085,6 +1085,7 @@
             <button class="tab-btn" onclick="showSection('organizar')">3. Organizar</button>
             <button class="tab-btn" onclick="showSection('evaluar')">4. Evaluar</button>
             <button class="tab-btn" onclick="showSection('hacer')">5. Hacer (Hoy)</button>
+            <button class="tab-btn" onclick="showSection('notas')">📝 Notas</button>
             <button class="tab-btn" onclick="showSection('configuracion')">⚙️ Configuración</button>
             <button class="tab-btn" id="bookTrackerTab" style="display:none;" onclick="showSection('bookTracker')">📖 Book Tracker</button>
             <button class="tab-btn" id="docTab" onclick="showSection('documentacion')">📚 Documentación</button>
@@ -1290,6 +1291,24 @@
                             </div>
                             <div id="improvementsList" class="improvements-list"></div>
                         </div>
+
+                        <!-- APARTADO DE OBJETIVOS -->
+                        <div class="improvements-section" style="margin-top: 24px; padding-top: 20px; border-top: 2px solid var(--border-color);">
+                            <h4>🎯 Objetivos</h4>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 12px;">Define objetivos para diferentes plazos (corto, medio, largo plazo) y monitorea tu progreso.</p>
+                            <div class="improvement-add">
+                                <select id="objectivePeriod" style="padding: 8px; border-radius: 8px;">
+                                    <option value="corto">Corto plazo (hasta 3 meses)</option>
+                                    <option value="medio">Medio plazo (3-12 meses)</option>
+                                    <option value="largo">Largo plazo (más de 1 año)</option>
+                                </select>
+                            </div>
+                            <div class="improvement-add">
+                                <input id="newObjective" placeholder="Describe un objetivo..." style="flex: 1;">
+                                <button onclick="addObjective()" style="background-color: #9b59b6;">➕ Crear objetivo</button>
+                            </div>
+                            <div id="objectivesList" class="improvements-list"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -1301,6 +1320,33 @@
             <div class="card">
                 <h2>✅ Tareas de Hoy</h2>
                 <div id="todayTasks" class="task-list"></div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: NOTAS -->
+        <div id="notas" class="section">
+            <div class="card">
+                <h2>📝 Notas y Tareas Rápidas</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                    Escribe notas de cualquier cosa y crea tareas rápidamente.
+                </p>
+                
+                <!-- Editor de notas -->
+                <div style="margin-bottom: 20px;">
+                    <label style="font-weight: 600; display: block; margin-bottom: 8px;">Escribir nota:</label>
+                    <textarea id="noteTextarea" placeholder="Escribe tu nota aquí... Puedes incluir #tarea para crear una tarea rápida." style="width: 100%; min-height: 100px; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; font-family: inherit; resize: vertical;"></textarea>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button onclick="saveNote()">💾 Guardar nota</button>
+                        <button onclick="createTaskFromNote()" style="background-color: var(--success);">➕ Crear tarea desde esto</button>
+                        <button onclick="clearNoteEditor()" style="background-color: var(--warning);">🗑️ Limpiar</button>
+                    </div>
+                </div>
+
+                <hr style="border: none; border-top: 2px solid var(--border-color); margin: 20px 0;">
+
+                <!-- Lista de notas guardadas -->
+                <h3 style="color: var(--accent-primary); margin-bottom: 12px;">📋 Mis notas guardadas</h3>
+                <div id="notesList" class="task-list"></div>
             </div>
         </div>
 
@@ -1721,6 +1767,8 @@
         let alternativeBlocks = []; // Array para almacenar bloques alternativos
         let blockAutomations = []; // Array para almacenar automatizaciones de bloques
         let currentBlockData = null; // Datos del bloque en creación
+        let notes = []; // Array para almacenar notas
+        let objectives = []; // Array para almacenar objetivos
 
         // ========== MODO (ESCOLAR/PERSONAL) ==========
         function switchMode(mode) {
@@ -1779,6 +1827,7 @@
             if (sectionId === 'organizar') renderCalendar();
             if (sectionId === 'evaluar') renderEnhancedMetrics();
             if (sectionId === 'hacer') renderTodayTasks();
+            if (sectionId === 'notas') renderNotes();
             if (sectionId === 'configuracion') renderAutomationsList();
             if (sectionId === 'bookTracker') renderBookTracker();
             if (sectionId === 'documentacion') renderDocs();
@@ -3446,6 +3495,7 @@
             }
 
             feedbackEl.textContent = feedback;
+            renderObjectives();
             updateReflectionStatus();
         }
 
@@ -3740,6 +3790,313 @@
             persistImprovements(list);
         }
 
+        // ========== NOTAS ==========
+        function loadNotes() {
+            const raw = localStorage.getItem('gtd_notes');
+            try { notes = raw ? JSON.parse(raw) : []; } catch(e) { notes = []; }
+        }
+
+        function persistNotes() {
+            localStorage.setItem('gtd_notes', JSON.stringify(notes));
+        }
+
+        function saveNote() {
+            const text = document.getElementById('noteTextarea').value.trim();
+            if (!text) {
+                alert('Por favor escribe una nota antes de guardar');
+                return;
+            }
+            
+            notes.push({
+                id: Date.now(),
+                text: text,
+                createdAt: new Date().toISOString(),
+                tags: extractTags(text)
+            });
+            
+            persistNotes();
+            clearNoteEditor();
+            renderNotes();
+            alert('✅ Nota guardada');
+        }
+
+        function extractTags(text) {
+            const tagRegex = /#\w+/g;
+            const matches = text.match(tagRegex) || [];
+            return matches.map(tag => tag.substring(1).toLowerCase());
+        }
+
+        function createTaskFromNote() {
+            const text = document.getElementById('noteTextarea').value.trim();
+            if (!text) {
+                alert('Por favor escribe algo antes de crear una tarea');
+                return;
+            }
+            
+            // Añadir a inbox para procesarla como tarea
+            inbox.push({
+                id: Date.now(),
+                text: text,
+                processed: false,
+                mode: currentMode
+            });
+            
+            persistData();
+            clearNoteEditor();
+            renderInbox();
+            alert('✅ Se añadió a tu inbox como tarea para procesar');
+        }
+
+        function clearNoteEditor() {
+            document.getElementById('noteTextarea').value = '';
+        }
+
+        function renderNotes() {
+            loadNotes();
+            const container = document.getElementById('notesList');
+            container.innerHTML = '';
+            
+            if (notes.length === 0) {
+                container.innerHTML = '<div class="empty-state">No tienes notas guardadas aún.</div>';
+                return;
+            }
+            
+            // Mostrar notas en orden inverso (más recientes primero)
+            notes.slice().reverse().forEach((note, reverseIdx) => {
+                const actualIdx = notes.length - 1 - reverseIdx;
+                const div = document.createElement('div');
+                div.className = 'task-item';
+                div.style.marginBottom = '12px';
+                
+                const preview = note.text.substring(0, 100) + (note.text.length > 100 ? '...' : '');
+                const date = new Date(note.createdAt).toLocaleString('es-ES');
+                const tagsHtml = note.tags && note.tags.length > 0 
+                    ? `<div style="margin-top: 8px;">${note.tags.map(tag => `<span class="badge" style="background-color: var(--accent-primary); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; margin-right: 4px;">#${tag}</span>`).join('')}</div>`
+                    : '';
+                
+                div.innerHTML = `
+                    <div style="flex: 1;">
+                        <div style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 6px;">${date}</div>
+                        <div style="white-space: pre-wrap; word-break: break-word;">${escapeHtml(preview)}</div>
+                        ${tagsHtml}
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <button class="btn-small" onclick="expandNote(${actualIdx})" style="background-color: var(--accent-primary);">👁️ Ver</button>
+                        <button class="btn-small" onclick="editNote(${actualIdx})" style="background-color: var(--accent-primary);">✏️</button>
+                        <button class="btn-small btn-danger" onclick="deleteNote(${actualIdx})">🗑️</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function expandNote(idx) {
+            const note = notes[idx];
+            if (!note) return;
+            alert('📝 Nota completa:\n\n' + note.text + '\n\n📅 ' + new Date(note.createdAt).toLocaleString('es-ES'));
+        }
+
+        function editNote(idx) {
+            const note = notes[idx];
+            if (!note) return;
+            
+            const newText = prompt('Editar nota:', note.text);
+            if (newText !== null && newText.trim() !== '') {
+                notes[idx].text = newText.trim();
+                notes[idx].tags = extractTags(newText);
+                persistNotes();
+                renderNotes();
+                alert('✅ Nota actualizada');
+            }
+        }
+
+        function deleteNote(idx) {
+            if (!confirm('¿Eliminar esta nota permanentemente?')) return;
+            notes.splice(idx, 1);
+            persistNotes();
+            renderNotes();
+            alert('✅ Nota eliminada');
+        }
+
+        // ========== OBJETIVOS ==========
+        function loadObjectives() {
+            const raw = localStorage.getItem('gtd_objectives');
+            try { objectives = raw ? JSON.parse(raw) : []; } catch(e) { objectives = []; }
+        }
+
+        function persistObjectives() {
+            localStorage.setItem('gtd_objectives', JSON.stringify(objectives));
+        }
+
+        function addObjective() {
+            const text = document.getElementById('newObjective').value.trim();
+            const period = document.getElementById('objectivePeriod').value;
+            
+            if (!text) {
+                alert('Por favor describe un objetivo');
+                return;
+            }
+            
+            objectives.push({
+                id: Date.now(),
+                text: text,
+                period: period,
+                completed: false,
+                progress: 0,
+                createdAt: new Date().toISOString(),
+                dueDate: calculateDueDate(period)
+            });
+            
+            persistObjectives();
+            document.getElementById('newObjective').value = '';
+            renderObjectives();
+            alert('✅ Objetivo creado');
+        }
+
+        function calculateDueDate(period) {
+            const today = new Date();
+            if (period === 'corto') {
+                today.setMonth(today.getMonth() + 3);
+            } else if (period === 'medio') {
+                today.setMonth(today.getMonth() + 12);
+            } else if (period === 'largo') {
+                today.setFullYear(today.getFullYear() + 2);
+            }
+            return today.toISOString().split('T')[0];
+        }
+
+        function getPeriodLabel(period) {
+            const labels = {
+                'corto': 'Corto plazo',
+                'medio': 'Medio plazo',
+                'largo': 'Largo plazo'
+            };
+            return labels[period] || period;
+        }
+
+        function renderObjectives() {
+            loadObjectives();
+            const container = document.getElementById('objectivesList');
+            container.innerHTML = '';
+            
+            if (objectives.length === 0) {
+                container.innerHTML = '<div class="empty-state">No tienes objetivos establecidos aún.</div>';
+                return;
+            }
+            
+            // Agrupar objetivos por período
+            const byPeriod = { corto: [], medio: [], largo: [] };
+            objectives.forEach(obj => {
+                if (byPeriod[obj.period]) {
+                    byPeriod[obj.period].push(obj);
+                }
+            });
+            
+            ['corto', 'medio', 'largo'].forEach(period => {
+                if (byPeriod[period].length === 0) return;
+                
+                const periodDiv = document.createElement('div');
+                periodDiv.style.marginBottom = '20px';
+                periodDiv.style.paddingBottom = '16px';
+                periodDiv.style.borderBottom = '2px solid var(--border-color)';
+                
+                const periodTitle = document.createElement('div');
+                periodTitle.style.fontWeight = '600';
+                periodTitle.style.color = 'var(--accent-primary)';
+                periodTitle.style.marginBottom = '12px';
+                periodTitle.textContent = getPeriodLabel(period).toUpperCase();
+                periodDiv.appendChild(periodTitle);
+                
+                byPeriod[period].forEach(obj => {
+                    const objDiv = document.createElement('div');
+                    objDiv.style.backgroundColor = 'var(--bg-secondary)';
+                    objDiv.style.padding = '12px';
+                    objDiv.style.borderRadius = '8px';
+                    objDiv.style.marginBottom = '8px';
+                    objDiv.style.borderLeft = obj.completed ? '4px solid var(--success)' : '4px solid var(--accent-primary)';
+                    objDiv.style.opacity = obj.completed ? '0.7' : '1';
+                    
+                    objDiv.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+                            <div style="flex: 1;">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                    <input type="checkbox" ${obj.completed ? 'checked' : ''} onchange="toggleObjective(${obj.id})" style="cursor: pointer; width: 20px; height: 20px;">
+                                    <div style="font-weight: 600; ${obj.completed ? 'text-decoration: line-through; color: var(--text-secondary);' : ''}">${escapeHtml(obj.text)}</div>
+                                </div>
+                                <div style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 8px;">
+                                    📅 Vencimiento: ${new Date(obj.dueDate).toLocaleDateString('es-ES')}
+                                </div>
+                                <div style="margin-bottom: 8px;">
+                                    <label style="display: block; font-size: 0.9rem; margin-bottom: 6px;">Progreso: ${obj.progress}%</label>
+                                    <div style="width: 100%; height: 8px; background-color: var(--border-color); border-radius: 4px; overflow: hidden;">
+                                        <div style="height: 100%; width: ${obj.progress}%; background-color: var(--success); transition: width 0.3s;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 6px;">
+                                <button class="btn-small" onclick="editObjectiveProgress(${obj.id})" style="background-color: var(--warning); width: 80px;">📊 Progreso</button>
+                                <button class="btn-small" onclick="editObjectiveText(${obj.id})" style="background-color: var(--accent-primary); width: 80px;">✏️ Editar</button>
+                                <button class="btn-small btn-danger" onclick="deleteObjective(${obj.id})" style="width: 80px;">🗑️</button>
+                            </div>
+                        </div>
+                    `;
+                    periodDiv.appendChild(objDiv);
+                });
+                
+                container.appendChild(periodDiv);
+            });
+        }
+
+        function toggleObjective(id) {
+            const obj = objectives.find(o => o.id === id);
+            if (obj) {
+                obj.completed = !obj.completed;
+                if (obj.completed) obj.progress = 100;
+                persistObjectives();
+                renderObjectives();
+            }
+        }
+
+        function editObjectiveText(id) {
+            const obj = objectives.find(o => o.id === id);
+            if (!obj) return;
+            
+            const newText = prompt('Editar objetivo:', obj.text);
+            if (newText !== null && newText.trim() !== '') {
+                obj.text = newText.trim();
+                persistObjectives();
+                renderObjectives();
+                alert('✅ Objetivo actualizado');
+            }
+        }
+
+        function editObjectiveProgress(id) {
+            const obj = objectives.find(o => o.id === id);
+            if (!obj) return;
+            
+            const newProgress = prompt('Actualizar progreso (0-100%):', obj.progress);
+            if (newProgress !== null) {
+                const progress = Math.max(0, Math.min(100, parseInt(newProgress, 10)));
+                if (!isNaN(progress)) {
+                    obj.progress = progress;
+                    if (progress === 100) {
+                        obj.completed = true;
+                    }
+                    persistObjectives();
+                    renderObjectives();
+                    alert('✅ Progreso actualizado');
+                }
+            }
+        }
+
+        function deleteObjective(id) {
+            if (!confirm('¿Eliminar este objetivo permanentemente?')) return;
+            objectives = objectives.filter(o => o.id !== id);
+            persistObjectives();
+            renderObjectives();
+            alert('✅ Objetivo eliminado');
+        }
+
         // ========== DOCUMENTOS ==========
         function switchDocCategory(cat, ev) {
             currentDocCategory = cat;
@@ -3877,7 +4234,7 @@
 
         // ========== FORMATEAR SISTEMA (LIMPIAR) ==========
         function formatSystem() {
-            if (!confirm('⚠️ ADVERTENCIA: Esto eliminará ABSOLUTAMENTE TODO (inbox, automatizaciones, eventos, libros, documentos, reflexiones, mejoras). ¿Estás seguro?')) return;
+            if (!confirm('⚠️ ADVERTENCIA: Esto eliminará ABSOLUTAMENTE TODO (inbox, automatizaciones, eventos, libros, documentos, reflexiones, mejoras, notas, objetivos). ¿Estás seguro?')) return;
             if (!confirm('Esta acción es IRREVERSIBLE. Se perderá toda la información. ¿Continuar?')) return;
             
             // Limpiar todos los arrays
@@ -3891,6 +4248,8 @@
             dailyReflections = [];
             weeklyReflections = [];
             improvements = [];
+            notes = [];
+            objectives = [];
             
             // Limpiar localStorage completamente
             localStorage.removeItem('gtd_data');
@@ -3899,6 +4258,8 @@
             localStorage.removeItem('gtd_books');
             localStorage.removeItem('gtd_improvements');
             localStorage.removeItem('gtd_docs');
+            localStorage.removeItem('gtd_notes');
+            localStorage.removeItem('gtd_objectives');
             
             // Persistir estado vacío
             persistData();
@@ -3910,6 +4271,8 @@
             renderBookTracker();
             renderDocs();
             renderEnhancedMetrics();
+            renderNotes();
+            renderObjectives();
             
             alert('✅ Sistema completamente formateado. Todos los datos han sido eliminados.');
             
@@ -3963,7 +4326,9 @@
                 improvements: (() => {
                     const raw = localStorage.getItem('gtd_improvements');
                     return raw ? JSON.parse(raw) : [];
-                })()
+                })(),
+                notes: notes,
+                objectives: objectives
             };
             localStorage.setItem('gtd_data', JSON.stringify(data));
         }
@@ -3990,15 +4355,21 @@
                     });
                     blockAutomations = data.blockAutomations || [];
                     alternativeBlocks = data.alternativeBlocks || [];
+                    notes = data.notes || [];
+                    objectives = data.objectives || [];
                     console.log('✅ Datos cargados del localStorage. Automations:', automations.length);
                     console.log('Automations:', automations);
                 } catch(e) {
                     console.warn('Error cargando datos', e);
                     automations = [];
+                    notes = [];
+                    objectives = [];
                 }
             } else {
                 console.log('ℹ️ No hay datos guardados en localStorage aún');
                 automations = [];
+                notes = [];
+                objectives = [];
             }
             loadDocs();
             loadImprovements();
@@ -4017,6 +4388,8 @@
                     const raw = localStorage.getItem('gtd_improvements');
                     return raw ? JSON.parse(raw) : [];
                 })(),
+                notes: notes,
+                objectives: objectives,
                 reflectionConfig: (() => {
                     const raw = localStorage.getItem('gtd_reflection_cfg');
                     return raw ? JSON.parse(raw) : { reviewDay: 1 };
@@ -4054,6 +4427,8 @@
                     automations = importedData.automations || [];
                     blockAutomations = importedData.blockAutomations || [];
                     alternativeBlocks = importedData.alternativeBlocks || [];
+                    notes = importedData.notes || [];
+                    objectives = importedData.objectives || [];
 
                     if (importedData.improvements) {
                         localStorage.setItem('gtd_improvements', JSON.stringify(importedData.improvements));
@@ -4076,6 +4451,8 @@
                     renderTodayTasks();
                     renderDocs();
                     renderAutomationsList();
+                    renderNotes();
+                    renderObjectives();
 
                     alert('✅ Datos importados correctamente. Recargando...');
                     event.target.value = '';
@@ -4099,12 +4476,16 @@
         if (!blockAutomations || !Array.isArray(blockAutomations)) blockAutomations = [];
         if (!inbox || !Array.isArray(inbox)) inbox = [];
         if (!scheduledEvents || !Array.isArray(scheduledEvents)) scheduledEvents = [];
+        if (!notes || !Array.isArray(notes)) notes = [];
+        if (!objectives || !Array.isArray(objectives)) objectives = [];
         
         console.log('✅ Arrays inicializados:', {
             automations: automations.length,
             blockAutomations: blockAutomations.length,
             inbox: inbox.length,
-            scheduledEvents: scheduledEvents.length
+            scheduledEvents: scheduledEvents.length,
+            notes: notes.length,
+            objectives: objectives.length
         });
         
         // Ejecutar automatizaciones activas al cargar
@@ -4133,6 +4514,8 @@
         loadReflectionConfig();
         loadKaizenReflections();
         loadImprovements();
+        loadNotes();
+        loadObjectives();
         renderEnhancedMetrics();
     </script>
 
