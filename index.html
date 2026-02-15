@@ -3804,15 +3804,44 @@
 
         // ========== FORMATEAR SISTEMA (LIMPIAR) ==========
         function formatSystem() {
-            if (!confirm('⚠️ ADVERTENCIA: Esto eliminará TODOS los eventos programados en el calendario. ¿Estás seguro?')) return;
-            if (!confirm('Esta acción es irreversible. ¿Continuar?')) return;
+            if (!confirm('⚠️ ADVERTENCIA: Esto eliminará ABSOLUTAMENTE TODO (inbox, automatizaciones, eventos, libros, documentos, reflexiones, mejoras). ¿Estás seguro?')) return;
+            if (!confirm('Esta acción es IRREVERSIBLE. Se perderá toda la información. ¿Continuar?')) return;
             
+            // Limpiar todos los arrays
+            inbox = [];
             scheduledEvents = [];
+            automations = [];
+            blockAutomations = [];
             alternativeBlocks = [];
+            books = [];
+            docs = [];
+            dailyReflections = [];
+            weeklyReflections = [];
+            improvements = [];
+            
+            // Limpiar localStorage completamente
+            localStorage.removeItem('gtd_data');
+            localStorage.removeItem('gtd_kaizen_daily');
+            localStorage.removeItem('gtd_kaizen_weekly');
+            localStorage.removeItem('gtd_books');
+            localStorage.removeItem('gtd_improvements');
+            localStorage.removeItem('gtd_docs');
+            
+            // Persistir estado vacío
             persistData();
+            
+            // Re-renderizar todo
+            renderInbox();
             renderTodayTasks();
             renderCalendar();
-            alert('✅ Sistema formateado. Todos los eventos han sido eliminados.');
+            renderBookTracker();
+            renderDocs();
+            renderEnhancedMetrics();
+            
+            alert('✅ Sistema completamente formateado. Todos los datos han sido eliminados.');
+            
+            // Redirigir a Recopilar
+            showSection('recopilar');
         }
 
         // Función para limpiar automations inválidas
