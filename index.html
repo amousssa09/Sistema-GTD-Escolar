@@ -407,8 +407,9 @@
         .time-slot {
             display: grid;
             grid-template-columns: 80px 1fr;
-            min-height: 60px;
+            min-height: 220px;
             border-bottom: 1px solid var(--border-color);
+            position: relative;
         }
 
         .time-label {
@@ -417,29 +418,71 @@
             color: var(--text-secondary);
             text-align: right;
             padding-right: 16px;
+            background-color: var(--bg-secondary);
         }
 
         .time-content {
             padding: 8px;
             position: relative;
+            background-color: var(--bg-card);
         }
 
         .event-block {
             background-color: var(--accent-primary);
             color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
+            padding: 10px 12px;
+            border-radius: 8px;
             margin-bottom: 4px;
             cursor: move;
             font-size: 0.9rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .event-block:hover {
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+            transform: translateY(-3px);
+            z-index: 10;
+        }
+
+        .event-block::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            z-index: 1000;
+            pointer-events: none;
+            margin-bottom: 8px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .event-block:hover::after {
+            opacity: 1;
         }
 
         .event-block.dragging {
-            opacity: 0.5;
+            opacity: 0.6;
+            z-index: 1000;
         }
 
         .event-block.exam {
             background-color: var(--danger);
+        }
+
+        .event-block.proyecto {
+            background-color: var(--warning);
         }
 
         .event-block.project {
@@ -448,6 +491,10 @@
 
         .event-block.habit {
             background-color: #9b59b6;
+        }
+
+        .event-block.tarea {
+            background-color: var(--accent-primary);
         }
 
         /* Vista Semanal */
@@ -488,8 +535,10 @@
 
         .week-cell {
             background-color: var(--bg-card);
-            min-height: 60px;
+            min-height: 180px;
             padding: 4px;
+            position: relative;
+            border: 1px solid var(--border-color);
         }
 
         /* Vista Mensual */
@@ -862,6 +911,11 @@
 
             .time-slot {
                 grid-template-columns: 60px 1fr;
+                min-height: 140px;
+            }
+            
+            .week-cell {
+                min-height: 120px;
             }
             
             .eval-controls { flex-direction: column; align-items: stretch; }
@@ -892,12 +946,12 @@
         .badge-habit { background-color: #9b59b6; color: white; }
 
         .calendar-scroll {
-            max-height: 480px;
+            max-height: 800px;
             overflow-y: auto;
             padding-right: 8px;
         }
 
-        .time-slot { min-height: 48px; }
+        .time-slot { min-height: 220px; }
 
         /* ====== Estilos para Documentación ====== */
         .doc-list {
@@ -2945,28 +2999,43 @@
         function renderDayView() {
             const container = document.getElementById('dayTimeSlots');
             const dateStr = currentDate.toISOString().split('T')[0];
-            const dayEvents = scheduledEvents.filter(e => e.date === dateStr);
+            const dayEvents = scheduledEvents.filter(e => e.date === dateStr && e.timeStart && e.timeEnd);
+            
+            // Ordenar eventos por hora de inicio
+            dayEvents.sort((a, b) => a.timeStart.localeCompare(b.timeStart));
             
             let html = '';
             for (let hour = 0; hour <= 23; hour++) {
                 const timeStr = `${String(hour).padStart(2, '0')}:00`;
-                const eventsInSlot = dayEvents.filter(e => {
-                    if (!e.timeStart) return false;
-                    const eventHour = parseInt(e.timeStart.split(':')[0], 10);
-                    return eventHour === hour;
-                });
                 
                 html += `
-                    <div class="time-slot" data-time="${timeStr}">
+                    <div class="time-slot" data-time="${timeStr}" style="position: relative; display: flex; min-height: 70px;">
                         <div class="time-label">${timeStr}</div>
-                        <div class="time-content" ondrop="drop(event)" ondragover="allowDrop(event)" data-date="${dateStr}" data-time="${timeStr}" ondblclick="onCalendarTimeSlotClick('${dateStr}', ${hour})">
-                            ${eventsInSlot.map(e => {
-                                const minutes = calculateDuration(e.timeStart, e.timeEnd);
-                                const heightPercent = (minutes / 60) * 100;
+                        <div class="time-content" ondrop="drop(event)" ondragover="allowDrop(event)" data-date="${dateStr}" data-time="${timeStr}" ondblclick="onCalendarTimeSlotClick('${dateStr}', ${hour})" style="position: relative; width: 100%; border-bottom: 1px solid var(--border-color);">
+                            ${dayEvents.map(e => {
+                                const eventHour = parseInt(e.timeStart.split(':')[0], 10);
+                                const eventMinutes = parseInt(e.timeStart.split(':')[1], 10);
+                                const eventEndHour = parseInt(e.timeEnd.split(':')[0], 10);
+                                const eventEndMinutes = parseInt(e.timeEnd.split(':')[1], 10);
+                                
+                                // Solo mostrar si el evento comienza en esta hora o atraviesa esta hora
+                                const startsInThisHour = eventHour === hour;
+                                const endsAfterThisHour = eventHour < hour;
+                                const endsInOrAfterThisHour = (eventEndHour > hour) || (eventEndHour === hour && eventEndMinutes > 0);
+                                
+                                if (!startsInThisHour) return '';
+                                
+                                const startMinutesOffset = eventMinutes;
+                                const durationMinutes = calculateDuration(e.timeStart, e.timeEnd);
+                                const topPercent = (startMinutesOffset / 60) * 100;
+                                const heightPercent = (durationMinutes / 60) * 100;
+                                
                                 return `
-                                    <div class="event-block ${e.type}" draggable="true" ondragstart="drag(event)" onclick="editEventTimePeriod(event, ${e.id})" data-id="${e.id}" style="height: ${heightPercent}%; min-height: auto; display: flex; flex-direction: column; justify-content: center;">
-                                        <strong>${e.title || e.text}</strong>
-                                        <small>${e.timeStart} - ${e.timeEnd}</small>
+                                    <div class="event-block ${e.type}" draggable="true" ondragstart="drag(event)" onclick="editEventTimePeriod(event, ${e.id})" data-id="${e.id}" 
+                                        data-tooltip="${e.text || e.title} (${e.timeStart}-${e.timeEnd})"
+                                        style="position: absolute; top: ${topPercent}%; left: 5%; width: 90%; height: ${Math.max(40, heightPercent)}%; min-height: 40px; display: flex; flex-direction: column; justify-content: center; border-radius: 6px; padding: 6px;">
+                                        <strong style="font-size: 0.9rem;">${e.text || e.title}</strong>
+                                        <small style="font-size: 0.75rem;">${e.timeStart} - ${e.timeEnd}</small>
                                     </div>
                                 `;
                             }).join('')}
@@ -3007,13 +3076,17 @@
                     });
                     
                     html += `
-                        <div class="week-cell" ondrop="drop(event)" ondragover="allowDrop(event)" ondblclick="onCalendarTimeSlotClick('${dateStr}', ${hour})" data-date="${dateStr}" data-time="${timeStr}">
+                        <div class="week-cell" ondrop="drop(event)" ondragover="allowDrop(event)" ondblclick="onCalendarTimeSlotClick('${dateStr}', ${hour})" data-date="${dateStr}" data-time="${timeStr}" style="position: relative;">
                             ${eventsInSlot.map(e => {
-                                const minutes = calculateDuration(e.timeStart, e.timeEnd);
-                                const heightPercent = (minutes / 60) * 100;
+                                const eventMinutes = parseInt(e.timeStart.split(':')[1], 10);
+                                const durationMinutes = calculateDuration(e.timeStart, e.timeEnd);
+                                const topPercent = (eventMinutes / 60) * 100;
+                                const heightPercent = (durationMinutes / 60) * 100;
                                 return `
-                                    <div class="event-block ${e.type}" draggable="true" ondragstart="drag(event)" onclick="editEventTimePeriod(event, ${e.id})" data-id="${e.id}" style="font-size: 0.75rem; height: ${heightPercent}%; min-height: auto; display: flex; flex-direction: column; justify-content: center;">
-                                        ${e.title && e.title.substring ? e.title.substring(0, 20) + '...' : 'Evento'}
+                                    <div class="event-block ${e.type}" draggable="true" ondragstart="drag(event)" onclick="editEventTimePeriod(event, ${e.id})" data-id="${e.id}" 
+                                        data-tooltip="${(e.text || e.title || 'Evento').substring(0, 20)} (${e.timeStart}-${e.timeEnd})"
+                                        style="position: absolute; top: ${topPercent}%; left: 2%; width: 96%; height: ${Math.max(35, heightPercent)}%; font-size: 0.7rem; min-height: 30px; display: flex; align-items: center; border-radius: 4px; padding: 4px;">
+                                        ${(e.text || e.title || 'Evento').substring(0, 12)}
                                     </div>
                                 `;
                             }).join('')}
